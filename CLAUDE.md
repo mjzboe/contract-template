@@ -586,3 +586,7 @@ Must include:
 - [2026-06-10] 第5步 | 前端 | 完成前端核心功能开发：类型定义更新（对齐后端 schema）、API 调用层（templates/projects/contracts）、模板管理页（列表/上传/删除/变量查看）、合同生成页（Steps 流程：创建项目→选模板→填变量→生成下载）、首页仪表盘（统计卡片+最近项目）、构建验证通过、前后端代理联通
 - [2026-06-11] 第5步 | 模块3.3 | 三个功能改进点实施完成：(1) Excel 批量导入移到 Step 2 并实现多行预览+勾选 — 后端新增 parse-excel/batch-from-rows API，前端 Step 2 集成 Excel 上传+Table 行选择；(2) 异步导出 — 后端新增 task_manager.py（内存任务状态+asyncio 后台任务）、batch-from-rows-async/tasks/{id} API，前端轮询+进度展示；(3) zip 打包+文件名优化 — 后端 build_zip() 打包+有意义文件名（模板名_变量摘要），前端 ZIP 下载按钮
 - [2026-06-11] 第5步 | 模块3.3 | 端到端测试通过：Excel 解析 3 行 → 异步生成 9 份（3行×3模板）→ ZIP 下载 320KB，前后端构建均通过
+- [2026-06-11] 第6步 | 全局 | 完成后端单元测试（variable_parser 8个 + doc_generator 7个）+ API 集成测试（templates 7个 + projects 5个 + contracts 8个 + e2e 1个）= 41 个测试全部通过；添加分类 API 路由；修复 conftest.py 事件循环问题
+- [2026-06-11] 第6步 | 全局 | 完成前端组件测试（Home 3个 + TemplateManage 3个 + ContractGenerate 4个）= 10 个测试全部通过；MSW Mock 基础设施；matchMedia polyfill
+- [2026-06-11] 第6步 | 全局 | 完成 README.md 编写（项目简介、技术栈、本地运行、测试命令、已知限制）
+- [2026-06-11] 第6步 | 全局 | **第6步完成** — 集成与测试全部完成，可进入第7步报告撰写
