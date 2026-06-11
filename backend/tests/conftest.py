@@ -51,7 +51,7 @@ async def client(db_session: AsyncSession):
 async def sample_template(client: AsyncClient):
     """上传一个样例模板，返回 (template_id, variables)"""
     sample_path = os.path.join(
-        os.path.dirname(__file__), "..", "samples", "签字页模板_股东会决议.docx"
+        os.path.dirname(__file__), "..", "..", "samples", "签字页模板_股东会决议.docx"
     )
     with open(sample_path, "rb") as f:
         response = await client.post(
