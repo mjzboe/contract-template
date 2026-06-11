@@ -17,7 +17,7 @@
 
 ### 后端
 
-- **测试数据库**：复用开发 PostgreSQL（`localhost:5432/contract`），每个测试用例在事务中运行，测试后回滚
+- **测试数据库**：复用开发 PostgreSQL（`localhost:5432/contract`），每个测试用例在事务中运行（`connection.begin()`），测试结束后 `rollback` 清除所有插入/修改数据，确保不污染开发库
 - **测试客户端**：`httpx.AsyncClient` + `ASGITransport`，直连 FastAPI app
 - **依赖覆盖**：通过 FastAPI `dependency_overrides` 注入测试用数据库 session
 - **新增测试依赖**：`pytest-asyncio`

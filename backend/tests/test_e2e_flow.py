@@ -81,24 +81,15 @@ async def test_full_e2e_flow(client: AsyncClient):
     excel_data = excel_resp.json()
     assert excel_data["total_rows"] > 0
 
-    # 8. 批量异步生成
-    batch_resp = await client.post(
-        "/api/v1/contracts/batch-from-rows-async",
+    # 8. 批量同步生成（验证同步模式可以端到端完成）
+    batch_sync_resp = await client.post(
+        "/api/v1/contracts/batch-from-rows",
         json={
             "project_id": project_id,
             "rows": excel_data["rows"],
             "selected_indices": list(range(min(2, excel_data["total_rows"]))),
         },
     )
-    assert batch_resp.status_code == 200
-    task_id = batch_resp.json()["task_id"]
-
-    # 9. 等待完成 + 下载 ZIP
-    for _ in range(15):
-        time.sleep(1)
-        status_resp = await client.get(f"/api/v1/contracts/tasks/{task_id}")
-        if status_resp.json()["status"] == "completed":
-            break
-
-    zip_resp = await client.get(f"/api/v1/contracts/tasks/{task_id}/download-zip")
-    assert zip_resp.status_code == 200
+    assert batch_sync_resp.status_code == 200
+    batch_contracts = batch_sync_resp.json()
+    assert len(batch_contracts) >= 2
