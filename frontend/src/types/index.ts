@@ -69,6 +69,43 @@ export interface DeduplicatedVariablesResponse {
   variable_sources: Record<string, string[]>;
 }
 
+// ========== 归档 ==========
+export interface StatusHistoryEntry {
+  status: string;
+  at: string;
+}
+
+export interface ArchiveListItem {
+  id: string;
+  title: string;
+  status: string;
+  archived_at: string | null;
+  template_id: string;
+  template_name: string | null;
+  project_id: string | null;
+  project_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ArchiveDetail {
+  id: string;
+  title: string;
+  status: string;
+  archived_at: string | null;
+  template_id: string;
+  template_name: string | null;
+  project_id: string | null;
+  project_name: string | null;
+  variables: Record<string, string>;
+  status_history: StatusHistoryEntry[];
+  file_path: string | null;
+  file_path_pdf: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ========== 合同 ==========
 export interface ContractResponse {
   id: string;
@@ -80,6 +117,8 @@ export interface ContractResponse {
   file_path: string | null;
   file_path_pdf: string | null;
   status: string;
+  archived_at: string | null;
+  status_history: StatusHistoryEntry[];
   created_by: string | null;
   created_at: string;
   updated_at: string;
