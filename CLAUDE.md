@@ -592,3 +592,5 @@ Must include:
 - [2026-06-11] 第6步 | 全局 | **第6步完成** — 集成与测试全部完成，可进入第7步报告撰写
 - [2026-06-11] 新增 | RBAC+审计 | 完成 RBAC 权限与审计系统设计（brainstorming → spec → 实现）：4 角色（super_admin/template_admin/approver/user）、require_role 依赖注入、审计中间件+装饰器+混合存储（DB+JSONL）、登录页/authStore/RoleGuard/审计日志页/用户管理页、26 个后端测试通过、前端构建通过
 - [2026-06-11] 第6步 | RBAC+审计 | 全面重写测试体系：(1) 清空 PostgreSQL 历史数据；(2) 重写 conftest.py — 每测试独立 engine+表清理、admin/user/template_admin/approver 四角色 token fixture；(3) 重写 test_auth.py — 24 个测试覆盖密码/JWT/登录/注册/权限拒绝/模板RBAC/无token保护；(4) 重写 test_audit.py — 10 个测试覆盖中间件写操作记录/读操作跳过/登录跳过/API权限/分页过滤/详情；(5) 修复全部 API 测试适配 RBAC 认证 headers。**78 个后端测试全部通过**
+- [2026-06-13] 第7步 | 全局 | 完成项目报告撰写（9个必选部分 + 4个Mermaid图表 + AI使用日志），Pandoc 导出 Word
+- [2026-06-13] 第7步 | 全局 | **第7步完成** — 项目全部7个步骤完成
