@@ -302,7 +302,11 @@ export default function ContractGeneratePage() {
               {project && (
                 <Button
                   icon={<FileExcelOutlined />}
-                  href={projectApi.getExcelTemplateUrl(project.id)}
+                  onClick={() => {
+                    projectApi.downloadExcelTemplate(project.id).catch(() => {
+                      message.error("下载导入模板失败");
+                    });
+                  }}
                 >
                   下载导入模板
                 </Button>
@@ -414,7 +418,11 @@ export default function ContractGeneratePage() {
                       <Button
                         type="link"
                         icon={<DownloadOutlined />}
-                        href={contractApi.getExportUrl(r.id, "word")}
+                        onClick={() => {
+                          contractApi.downloadContract(r.id, "word").catch(() => {
+                            message.error("下载失败");
+                          });
+                        }}
                       >
                         下载 Word
                       </Button>
@@ -431,7 +439,11 @@ export default function ContractGeneratePage() {
                 <Button
                   type="primary"
                   icon={<FileZipOutlined />}
-                  href={contractApi.getTaskZipDownloadUrl(taskId)}
+                  onClick={() => {
+                    contractApi.downloadTaskZip(taskId).catch(() => {
+                      message.error("下载失败");
+                    });
+                  }}
                 >
                   下载全部（ZIP）
                 </Button>
@@ -440,7 +452,11 @@ export default function ContractGeneratePage() {
               {!taskId && contracts.length > 0 && project && (
                 <Button
                   icon={<FileZipOutlined />}
-                  href={contractApi.getProjectZipDownloadUrl(project.id)}
+                  onClick={() => {
+                    contractApi.downloadProjectZip(project.id).catch(() => {
+                      message.error("下载失败");
+                    });
+                  }}
                 >
                   打包下载全部（ZIP）
                 </Button>

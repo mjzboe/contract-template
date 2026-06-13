@@ -193,7 +193,11 @@ export default function ArchiveSearchPage() {
             type="link"
             size="small"
             icon={<DownloadOutlined />}
-            href={archiveApi.getArchiveDownloadUrl(record.id)}
+            onClick={() => {
+              archiveApi.downloadArchive(record.id).catch(() => {
+                message.error("下载失败");
+              });
+            }}
           >
             下载
           </Button>
@@ -381,13 +385,21 @@ export default function ArchiveSearchPage() {
             <div style={{ display: "flex", gap: 8 }}>
               <Button
                 icon={<DownloadOutlined />}
-                href={archiveApi.getArchiveDownloadUrl(detail.id, "word")}
+                onClick={() => {
+                  archiveApi.downloadArchive(detail.id, "word").catch(() => {
+                    message.error("下载失败");
+                  });
+                }}
               >
                 下载 Word
               </Button>
               <Button
                 icon={<DownloadOutlined />}
-                href={archiveApi.getArchiveDownloadUrl(detail.id, "pdf")}
+                onClick={() => {
+                  archiveApi.downloadArchive(detail.id, "pdf").catch(() => {
+                    message.error("下载失败");
+                  });
+                }}
               >
                 下载 PDF
               </Button>

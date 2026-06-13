@@ -29,3 +29,28 @@ export async function getArchiveDetail(id: string) {
 export function getArchiveDownloadUrl(id: string, format: string = "word") {
   return `/api/v1/archives/${id}/download?format=${format}`;
 }
+
+// 带认证的归档文件下载
+export async function downloadArchive(id: string, format: string = "word") {
+  const token = localStorage.getItem("token");
+  const res = await fetch(getArchiveDownloadUrl(id, format), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail || "下载失败");
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get("content-disposition");
+  let filename = `archive_${id}.docx`;
+  if (disposition) {
+    const match = disposition.match(/filename\*?=(?:UTF-8'')?([^;\n]+)/i);
+    if (match) filename = decodeURIComponent(match[1]);
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}

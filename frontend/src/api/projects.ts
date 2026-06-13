@@ -51,7 +51,32 @@ export async function getDeduplicatedVariables(id: string) {
   return res.data;
 }
 
-// 获取 Excel 导入模板下载 URL
+// 获取 Excel 导入模板下载 URL（仅用于带 token 的 fetch 下载）
 export function getExcelTemplateUrl(projectId: string) {
   return `/api/v1/projects/${projectId}/excel-template`;
+}
+
+// 带认证的 Excel 模板下载
+export async function downloadExcelTemplate(projectId: string) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(getExcelTemplateUrl(projectId), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail || "下载失败");
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get("content-disposition");
+  let filename = `导入模板_${projectId}.xlsx`;
+  if (disposition) {
+    const match = disposition.match(/filename\*?=(?:UTF-8'')?([^;\n]+)/i);
+    if (match) filename = decodeURIComponent(match[1]);
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
