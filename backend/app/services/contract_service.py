@@ -3,6 +3,7 @@
 import os
 import uuid
 import zipfile
+from datetime import datetime, timezone
 
 from openpyxl import load_workbook
 from sqlalchemy import func, select
@@ -55,7 +56,8 @@ async def generate_contract(
 
     generate_docx(template_version.file_path, variables, output_path)
 
-    # 创建 Contract 记录
+    # 创建 Contract 记录（自动归档）
+    now = datetime.now(timezone.utc).isoformat()
     contract = Contract(
         title=title,
         project_id=project_id,
@@ -63,7 +65,12 @@ async def generate_contract(
         template_version_id=template_version.id,
         variables=variables,
         file_path=output_path,
-        status="generated",
+        status="archived",
+        archived_at=datetime.now(timezone.utc),
+        status_history=[
+            {"status": "draft", "at": now},
+            {"status": "archived", "at": now},
+        ],
         created_by=user_id,
     )
     db.add(contract)
@@ -229,6 +236,7 @@ async def batch_generate_from_rows(
             if safe_summary:
                 title += f" - {safe_summary}"
 
+            now = datetime.now(timezone.utc).isoformat()
             contract = Contract(
                 title=title,
                 project_id=project_id,
@@ -236,7 +244,12 @@ async def batch_generate_from_rows(
                 template_version_id=template_version.id,
                 variables=variables,
                 file_path=output_path,
-                status="generated",
+                status="archived",
+                archived_at=datetime.now(timezone.utc),
+                status_history=[
+                    {"status": "draft", "at": now},
+                    {"status": "archived", "at": now},
+                ],
                 created_by=user_id,
             )
             db.add(contract)
@@ -327,7 +340,7 @@ async def batch_generate_from_excel(
         output_path = os.path.join(output_dir, output_filename)
         generate_docx(template_version.file_path, variables, output_path)
 
-        # 创建 Contract 记录
+        now = datetime.now(timezone.utc).isoformat()
         contract = Contract(
             title=title,
             project_id=project_id,
@@ -335,7 +348,12 @@ async def batch_generate_from_excel(
             template_version_id=template_version.id,
             variables=variables,
             file_path=output_path,
-            status="generated",
+            status="archived",
+            archived_at=datetime.now(timezone.utc),
+            status_history=[
+                {"status": "draft", "at": now},
+                {"status": "archived", "at": now},
+            ],
             created_by=user_id,
         )
         db.add(contract)
