@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.audit import router as audit_router
 from app.api.auth import router as auth_router
 from app.api.contracts import router as contracts_router
+from app.api.archives import router as archives_router
 from app.api.projects import router as projects_router
 from app.api.templates import router as templates_router
 from app.api.users import router as users_router
@@ -20,6 +21,7 @@ router.include_router(audit_router)
 router.include_router(templates_router)
 router.include_router(projects_router)
 router.include_router(contracts_router)
+router.include_router(archives_router)
 
 
 # ========== 分类 API ==========
