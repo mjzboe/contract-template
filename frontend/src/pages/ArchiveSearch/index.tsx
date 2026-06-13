@@ -396,8 +396,8 @@ export default function ArchiveSearchPage() {
               <Button
                 icon={<DownloadOutlined />}
                 onClick={() => {
-                  archiveApi.downloadArchive(detail.id, "pdf").catch(() => {
-                    message.error("下载失败");
+                  archiveApi.downloadArchive(detail.id, "pdf").catch((e) => {
+                    message.error(e.message || "PDF 下载失败，请确保已安装 LibreOffice");
                   });
                 }}
               >

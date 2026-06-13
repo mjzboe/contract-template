@@ -110,6 +110,8 @@ async def export_contract(
     """导出合同文件（下载）"""
     file_path = await contract_service.export_contract(db, contract_id, format)
     if not file_path:
+        if format == "pdf":
+            raise HTTPException(status_code=501, detail="PDF 转换不可用，请确保已安装 LibreOffice")
         raise HTTPException(status_code=404, detail="合同或文件不存在")
 
     if not os.path.exists(file_path):

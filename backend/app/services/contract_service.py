@@ -140,12 +140,23 @@ async def export_contract(
     if format == "word" or format == "docx":
         return contract.file_path
     elif format == "pdf":
-        # PDF 生成（MVP 简化：先提供 Word 格式）
-        # TODO: 后续可集成 WeasyPrint 或 LibreOffice 转换
         if contract.file_path_pdf and os.path.exists(contract.file_path_pdf):
             return contract.file_path_pdf
-        # MVP 阶段暂返回 Word 文件
-        return contract.file_path
+
+        # 即时转换 DOCX → PDF
+        from app.utils.pdf_converter import convert_docx_to_pdf, is_libreoffice_available
+        if not is_libreoffice_available():
+            return None
+
+        if contract.file_path and os.path.exists(contract.file_path):
+            pdf_dir = os.path.dirname(contract.file_path)
+            pdf_path = convert_docx_to_pdf(contract.file_path, pdf_dir)
+            if pdf_path:
+                contract.file_path_pdf = pdf_path
+                await db.flush()
+                return pdf_path
+
+        return None
 
     return contract.file_path
 

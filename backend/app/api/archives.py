@@ -64,6 +64,8 @@ async def download_archive(
     """下载归档文件"""
     file_path = await archive_service.get_archive_file_path(db, contract_id, format)
     if not file_path:
+        if format == "pdf":
+            raise HTTPException(status_code=501, detail="PDF 转换不可用，请确保已安装 LibreOffice")
         raise HTTPException(status_code=404, detail="归档记录或文件不存在")
 
     if not os.path.exists(file_path):
