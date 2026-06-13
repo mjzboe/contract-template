@@ -12,6 +12,8 @@ import AuditLogPage from "./pages/AuditLog";
 import LoginPage from "./pages/Login";
 import UserManagePage from "./pages/UserManage";
 import { useAuthStore } from "./stores/authStore";
+import luxuryTheme from "./styles/theme";
+import "./styles/global.css";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -55,7 +57,7 @@ function AppRoutes() {
 
 function App() {
   return (
-    <ConfigProvider locale={zhCN}>
+    <ConfigProvider locale={zhCN} theme={luxuryTheme}>
       <BrowserRouter>
         <AppRoutes />
       </BrowserRouter>

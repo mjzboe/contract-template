@@ -6,13 +6,21 @@ import {
   Modal,
   Upload,
   Input,
-  Tag,
   message,
   Popconfirm,
+  Typography,
 } from "antd";
 import { UploadOutlined, DeleteOutlined, SearchOutlined } from "@ant-design/icons";
 import type { TemplateResponse, VariableInfoResponse } from "../../types";
 import * as templateApi from "../../api/templates";
+
+const { Text } = Typography;
+
+const STATUS_STYLES: Record<string, { color: string; bg: string; label: string }> = {
+  draft: { color: "#6B6B6B", bg: "#F5F3F0", label: "草稿" },
+  active: { color: "#5B8C5A", bg: "#EFF5EF", label: "启用" },
+  archived: { color: "#999", bg: "#F5F5F5", label: "归档" },
+};
 
 export default function TemplateManagePage() {
   const [templates, setTemplates] = useState<TemplateResponse[]>([]);
@@ -21,11 +29,9 @@ export default function TemplateManagePage() {
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState("");
 
-  // 上传弹窗
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // 变量详情弹窗
   const [varsOpen, setVarsOpen] = useState(false);
   const [currentVars, setCurrentVars] = useState<VariableInfoResponse[]>([]);
   const [currentName, setCurrentName] = useState("");
@@ -83,12 +89,30 @@ export default function TemplateManagePage() {
       title: "模板名称",
       dataIndex: "name",
       key: "name",
+      render: (name: string) => <Text style={{ fontWeight: 500, color: "#1A1A1A" }}>{name}</Text>,
     },
     {
       title: "状态",
       dataIndex: "status",
       key: "status",
-      render: (s: string) => <Tag color={s === "draft" ? "default" : "green"}>{s}</Tag>,
+      render: (s: string) => {
+        const style = STATUS_STYLES[s] || STATUS_STYLES.draft;
+        return (
+          <span
+            style={{
+              display: "inline-block",
+              padding: "2px 12px",
+              borderRadius: 6,
+              fontSize: 12,
+              color: style.color,
+              background: style.bg,
+              fontWeight: 500,
+            }}
+          >
+            {style.label}
+          </span>
+        );
+      },
     },
     {
       title: "变量数",
@@ -96,7 +120,11 @@ export default function TemplateManagePage() {
       render: (_: unknown, r: TemplateResponse) => {
         const master = r.versions?.find((v) => v.is_master);
         return (
-          <Button type="link" onClick={() => showVariables(master?.variables || [], r.name)}>
+          <Button
+            type="link"
+            style={{ color: "#B8860B", fontWeight: 500, padding: 0 }}
+            onClick={() => showVariables(master?.variables || [], r.name)}
+          >
             {master?.variables?.length || 0} 个
           </Button>
         );
@@ -111,67 +139,112 @@ export default function TemplateManagePage() {
       title: "创建时间",
       dataIndex: "created_at",
       key: "created_at",
-      render: (t: string) => new Date(t).toLocaleString("zh-CN"),
+      render: (t: string) => (
+        <Text style={{ color: "#6B6B6B", fontSize: 13 }}>{new Date(t).toLocaleString("zh-CN")}</Text>
+      ),
     },
     {
       title: "操作",
       key: "action",
       render: (_: unknown, r: TemplateResponse) => (
         <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r.id)}>
-          <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+          <Button type="link" danger icon={<DeleteOutlined />} style={{ fontWeight: 500 }}>
+            删除
+          </Button>
         </Popconfirm>
       ),
     },
   ];
 
   return (
-    <>
-      <Space style={{ marginBottom: 16, width: "100%", justifyContent: "space-between" }}>
-        <Space>
-          <Input
-            placeholder="搜索模板"
-            prefix={<SearchOutlined />}
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            onPressEnter={() => { setPage(1); fetchTemplates(); }}
-            style={{ width: 200 }}
-          />
-          <Button onClick={() => { setPage(1); fetchTemplates(); }}>查询</Button>
-        </Space>
-        <Button type="primary" icon={<UploadOutlined />} onClick={() => setUploadOpen(true)}>
-          上传模板
-        </Button>
-      </Space>
-
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={templates}
-        loading={loading}
-        pagination={{
-          current: page,
-          total,
-          pageSize: 10,
-          onChange: setPage,
+    <div style={{ animation: "fadeIn 0.3s ease-out" }}>
+      <div
+        style={{
+          background: "#FFFFFF",
+          border: "1px solid #E8E4DF",
+          borderRadius: 16,
+          overflow: "hidden",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
         }}
-      />
+      >
+        <div
+          style={{
+            padding: "20px 24px",
+            borderBottom: "1px solid #E8E4DF",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Space>
+            <Input
+              placeholder="搜索模板"
+              prefix={<SearchOutlined style={{ color: "#BFBFBF" }} />}
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onPressEnter={() => { setPage(1); fetchTemplates(); }}
+              style={{ width: 220, borderRadius: 8 }}
+            />
+            <Button onClick={() => { setPage(1); fetchTemplates(); }}>查询</Button>
+          </Space>
+          <Button
+            type="primary"
+            icon={<UploadOutlined />}
+            onClick={() => setUploadOpen(true)}
+            style={{ fontWeight: 500 }}
+          >
+            上传模板
+          </Button>
+        </div>
 
-      {/* 上传弹窗 */}
-      <Modal title="上传模板" open={uploadOpen} onCancel={() => setUploadOpen(false)} footer={null}>
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={templates}
+          loading={loading}
+          pagination={{
+            current: page,
+            total,
+            pageSize: 10,
+            onChange: setPage,
+          }}
+          style={{ borderRadius: 0 }}
+        />
+      </div>
+
+      <Modal
+        title={
+          <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 17 }}>
+            上传模板
+          </span>
+        }
+        open={uploadOpen}
+        onCancel={() => setUploadOpen(false)}
+        footer={null}
+      >
         <Upload.Dragger
           accept=".docx,.doc"
           showUploadList={false}
           beforeUpload={(file) => { handleUpload(file); return false; }}
         >
-          <p style={{ fontSize: 48, color: "#1890ff" }}><UploadOutlined /></p>
-          <p>点击或拖拽上传 Word 模板文件</p>
-          <p style={{ color: "#999" }}>支持 .docx 格式</p>
+          <p style={{ fontSize: 36, color: "#B8860B" }}><UploadOutlined /></p>
+          <p style={{ color: "#1A1A1A", fontWeight: 500 }}>点击或拖拽上传 Word 模板文件</p>
+          <p style={{ color: "#999", fontSize: 13 }}>支持 .docx 格式</p>
         </Upload.Dragger>
-        {uploading && <p style={{ textAlign: "center", marginTop: 8 }}>上传中...</p>}
+        {uploading && <p style={{ textAlign: "center", marginTop: 8, color: "#6B6B6B" }}>上传中...</p>}
       </Modal>
 
-      {/* 变量详情弹窗 */}
-      <Modal title={`变量列表 — ${currentName}`} open={varsOpen} onCancel={() => setVarsOpen(false)} footer={null} width={600}>
+      <Modal
+        title={
+          <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 17 }}>
+            变量列表 — {currentName}
+          </span>
+        }
+        open={varsOpen}
+        onCancel={() => setVarsOpen(false)}
+        footer={null}
+        width={600}
+      >
         <Table
           rowKey="name"
           size="small"
@@ -186,6 +259,6 @@ export default function TemplateManagePage() {
           ]}
         />
       </Modal>
-    </>
+    </div>
   );
 }

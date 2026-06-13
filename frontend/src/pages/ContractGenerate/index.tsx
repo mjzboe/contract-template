@@ -196,12 +196,12 @@ export default function ContractGeneratePage() {
   const isTaskRunning = taskStatus?.status === "running" || taskStatus?.status === "pending";
 
   return (
-    <>
-      <Steps current={current} items={steps} style={{ marginBottom: 24 }} />
+    <div style={{ animation: "fadeIn 0.3s ease-out" }}>
+      <Steps current={current} items={steps} style={{ marginBottom: 28 }} />
 
       {/* Step 1 */}
       {current === 0 && (
-        <Card title="创建项目">
+        <Card title={<span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 17, fontWeight: 500 }}>创建项目</span>}>
           <Space direction="vertical" style={{ width: "100%" }} size="large">
             <Input
               placeholder="输入项目名称，如：XX公司IPO签字页"
@@ -226,7 +226,14 @@ export default function ContractGeneratePage() {
                   render: (_: unknown, r: TemplateResponse) =>
                     r.versions?.find((v) => v.is_master)?.variables?.length || 0,
                 },
-                { title: "状态", dataIndex: "status", render: (s: string) => <Tag>{s}</Tag> },
+                { title: "状态", dataIndex: "status", render: (s: string) => {
+                  const statusStyles: Record<string, { color: string; bg: string; label: string }> = {
+                    draft: { color: "#6B6B6B", bg: "#F5F3F0", label: "草稿" },
+                    active: { color: "#5B8C5A", bg: "#EFF5EF", label: "启用" },
+                  };
+                  const st = statusStyles[s] || { color: "#6B6B6B", bg: "#F5F3F0", label: s };
+                  return <span style={{ padding: "2px 12px", borderRadius: 6, fontSize: 12, color: st.color, background: st.bg }}>{st.label}</span>;
+                }},
               ]}
             />
             <Button
@@ -244,7 +251,7 @@ export default function ContractGeneratePage() {
 
       {/* Step 2 */}
       {current === 1 && dedupInfo && (
-        <Card title="填写变量">
+        <Card title={<span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 17, fontWeight: 500 }}>填写变量</span>}>
           <Space direction="vertical" style={{ width: "100%" }} size="middle">
             <Alert
               type="info"
@@ -262,7 +269,7 @@ export default function ContractGeneratePage() {
                     label={
                       <Space>
                         <span>{v.display_name || v.name}</span>
-                        {isShared && <Tag color="blue">共享（{sources.length} 个模板）</Tag>}
+                        {isShared && <Tag color="gold" style={{ borderRadius: 6, fontSize: 11 }}>共享（{sources.length} 个模板）</Tag>}
                       </Space>
                     }
                   >
@@ -351,7 +358,7 @@ export default function ContractGeneratePage() {
 
       {/* Step 3 */}
       {current === 2 && (
-        <Card title="生成与下载">
+        <Card title={<span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 17, fontWeight: 500 }}>生成与下载</span>}>
           <Space direction="vertical" style={{ width: "100%" }} size="middle">
             {/* 异步任务状态 */}
             {taskId && taskStatus && (
@@ -389,7 +396,9 @@ export default function ContractGeneratePage() {
                 pagination={false}
                 columns={[
                   { title: "标题", dataIndex: "title", ellipsis: true },
-                  { title: "状态", dataIndex: "status", render: (s: string) => <Tag color="green">{s}</Tag> },
+                  { title: "状态", dataIndex: "status", render: (s: string) => (
+                    <span style={{ padding: "2px 12px", borderRadius: 6, fontSize: 12, color: "#5B8C5A", background: "#EFF5EF", fontWeight: 500 }}>{s}</span>
+                  ) },
                   {
                     title: "操作",
                     render: (_: unknown, r: ContractResponse) => (
@@ -433,6 +442,6 @@ export default function ContractGeneratePage() {
           </Space>
         </Card>
       )}
-    </>
+    </div>
   );
 }

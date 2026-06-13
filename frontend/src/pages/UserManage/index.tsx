@@ -198,7 +198,8 @@ export default function UserManagePage() {
   ];
 
   return (
-    <Card title="用户管理">
+    <div style={{ animation: "fadeIn 0.3s ease-out" }}>
+    <Card title={<span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 17, fontWeight: 500 }}>用户管理</span>}>
       <Space style={{ marginBottom: 16 }} wrap>
         <Input.Search
           placeholder="搜索用户名或邮箱"
@@ -263,5 +264,6 @@ export default function UserManagePage() {
         </Form>
       </Modal>
     </Card>
+    </div>
   );
 }

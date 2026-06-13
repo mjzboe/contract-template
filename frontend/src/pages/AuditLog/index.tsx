@@ -136,7 +136,8 @@ export default function AuditLogPage() {
   ];
 
   return (
-    <Card title="审计日志">
+    <div style={{ animation: "fadeIn 0.3s ease-out" }}>
+    <Card title={<span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 17, fontWeight: 500 }}>审计日志</span>}>
       <Space style={{ marginBottom: 16 }} wrap>
         <Select
           placeholder="操作类型"
@@ -201,5 +202,6 @@ export default function AuditLogPage() {
         )}
       </Modal>
     </Card>
+    </div>
   );
 }

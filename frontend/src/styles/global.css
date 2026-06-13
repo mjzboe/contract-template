@@ -1,0 +1,304 @@
+/* ========================================
+   Signature Page Manager — Luxury Theme
+   ======================================== */
+
+/* --- Google Fonts Import --- */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+/* --- CSS Custom Properties --- */
+:root {
+  --color-gold: #B8860B;
+  --color-gold-light: #D4A843;
+  --color-gold-muted: rgba(184, 134, 11, 0.08);
+  --color-charcoal: #1A1A1A;
+  --color-warm-gray: #F7F5F2;
+  --color-border: #E8E4DF;
+  --color-text-secondary: #6B6B6B;
+  --font-display: 'Cormorant Garamond', 'Noto Serif SC', 'Songti SC', 'Georgia', serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --shadow-soft: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+  --shadow-elevated: 0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.03);
+  --shadow-gold: 0 2px 8px rgba(184,134,11,0.15);
+  --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- Base Reset --- */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-warm-gray);
+  color: var(--color-charcoal);
+  margin: 0;
+  line-height: 1.7;
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #D4D0CC;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B8B4B0;
+}
+
+/* --- Animations --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* --- Layout Overrides --- */
+.ant-layout-sider {
+  border-right: 1px solid var(--color-border) !important;
+  background: #FFFFFF !important;
+  box-shadow: none !important;
+}
+
+.ant-layout-sider .ant-layout-sider-children {
+  background: #FFFFFF !important;
+}
+
+.ant-layout-header {
+  background: #FFFFFF !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+/* --- Menu Overrides (Light Sidebar) --- */
+.ant-menu-light {
+  background: transparent !important;
+}
+
+.ant-menu-light .ant-menu-item {
+  margin: 4px 8px !important;
+  border-radius: 8px !important;
+  transition: var(--transition-base) !important;
+  font-size: 13.5px !important;
+  letter-spacing: 0.02em;
+}
+
+.ant-menu-light .ant-menu-item-selected {
+  background: var(--color-gold-muted) !important;
+  color: var(--color-gold) !important;
+  font-weight: 500 !important;
+  position: relative;
+}
+
+.ant-menu-light .ant-menu-item-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  bottom: 25%;
+  width: 3px;
+  background: var(--color-gold);
+  border-radius: 2px;
+}
+
+.ant-menu-light .ant-menu-item:hover:not(.ant-menu-item-selected) {
+  background: rgba(0,0,0,0.02) !important;
+}
+
+/* --- Card Overrides --- */
+.ant-card {
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-soft) !important;
+  transition: var(--transition-base) !important;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.ant-card:hover {
+  box-shadow: var(--shadow-elevated) !important;
+}
+
+.ant-card-head {
+  border-bottom: 1px solid var(--color-border) !important;
+  font-family: var(--font-display) !important;
+  font-size: 17px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.02em;
+}
+
+/* --- Table Overrides --- */
+.ant-table {
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+.ant-table-thead > tr > th {
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  font-weight: 600 !important;
+  color: var(--color-text-secondary) !important;
+  background: #FAFAF8 !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.ant-table-tbody > tr {
+  transition: var(--transition-base) !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: #FBF9F6 !important;
+}
+
+/* --- Button Refinements --- */
+.ant-btn-primary {
+  font-weight: 500 !important;
+  letter-spacing: 0.03em;
+  transition: var(--transition-base) !important;
+}
+
+.ant-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-gold) !important;
+}
+
+.ant-btn-default {
+  border-color: var(--color-border) !important;
+  transition: var(--transition-base) !important;
+}
+
+.ant-btn-default:hover {
+  border-color: var(--color-gold-light) !important;
+  color: var(--color-gold) !important;
+}
+
+/* --- Input Refinements --- */
+.ant-input,
+.ant-input-affix-wrapper {
+  transition: var(--transition-base) !important;
+}
+
+.ant-input:focus,
+.ant-input-focused,
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused {
+  border-color: var(--color-gold-light) !important;
+}
+
+/* --- Tag Refinements --- */
+.ant-tag {
+  font-size: 12px !important;
+  letter-spacing: 0.02em;
+  padding: 2px 10px !important;
+}
+
+/* --- Modal Refinements --- */
+.ant-modal-content {
+  border-radius: 16px !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.1) !important;
+}
+
+.ant-modal-header {
+  border-radius: 16px 16px 0 0 !important;
+}
+
+/* --- Steps Refinements --- */
+.ant-steps-item-process .ant-steps-item-icon {
+  background: var(--color-gold) !important;
+  border-color: var(--color-gold) !important;
+}
+
+.ant-steps-item-finish .ant-steps-item-icon {
+  border-color: var(--color-gold) !important;
+  color: var(--color-gold) !important;
+}
+
+.ant-steps-item-finish > .ant-steps-item-container > .ant-steps-item-content > .ant-steps-item-title {
+  color: var(--color-gold) !important;
+}
+
+/* --- Statistic Refinements --- */
+.ant-statistic-content-value {
+  font-family: var(--font-display) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em;
+}
+
+/* --- Upload Dragger --- */
+.ant-upload-drag {
+  border-color: var(--color-border) !important;
+  border-style: dashed !important;
+  border-radius: 12px !important;
+  transition: var(--transition-base) !important;
+  background: #FAFAF8 !important;
+}
+
+.ant-upload-drag:hover {
+  border-color: var(--color-gold-light) !important;
+  background: var(--color-gold-muted) !important;
+}
+
+/* --- Message Refinements --- */
+.ant-message-notice-content {
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-elevated) !important;
+}
+
+/* --- Dropdown Refinements --- */
+.ant-dropdown-menu {
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-elevated) !important;
+  padding: 6px !important;
+}
+
+.ant-dropdown-menu-item {
+  border-radius: 6px !important;
+}
+
+/* --- Page Transition --- */
+.page-enter {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* --- Brand Typography Utility --- */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.text-gold {
+  color: var(--color-gold);
+}
+
+/* --- Divider --- */
+.ant-divider {
+  border-color: var(--color-border) !important;
+}
+
+/* --- Pagination --- */
+.ant-pagination-item-active {
+  border-color: var(--color-gold) !important;
+}
+
+/* --- Progress --- */
+.ant-progress-bg {
+  background: var(--color-gold) !important;
+}
