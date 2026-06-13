@@ -594,3 +594,4 @@ Must include:
 - [2026-06-11] 第6步 | RBAC+审计 | 全面重写测试体系：(1) 清空 PostgreSQL 历史数据；(2) 重写 conftest.py — 每测试独立 engine+表清理、admin/user/template_admin/approver 四角色 token fixture；(3) 重写 test_auth.py — 24 个测试覆盖密码/JWT/登录/注册/权限拒绝/模板RBAC/无token保护；(4) 重写 test_audit.py — 10 个测试覆盖中间件写操作记录/读操作跳过/登录跳过/API权限/分页过滤/详情；(5) 修复全部 API 测试适配 RBAC 认证 headers。**78 个后端测试全部通过**
 - [2026-06-13] 第7步 | 全局 | 完成项目报告撰写（9个必选部分 + 4个Mermaid图表 + AI使用日志），Pandoc 导出 Word
 - [2026-06-13] 第7步 | 全局 | **第7步完成** — 项目全部7个步骤完成
+- [2026-06-13] 新增 | 模块3.5 | 完成档案归档与检索功能：Contract 模型扩展（archived_at + status_history）、自动归档（generate/batch 生成后 status=archived）、归档检索 API（/archives 列表+详情+下载，支持关键词/模板/项目/时间过滤）、前端 ArchiveSearchPage 重写（搜索栏+表格+详情弹窗+操作时间线+文件下载）、8 个后端测试通过
