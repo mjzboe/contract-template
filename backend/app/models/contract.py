@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -32,6 +33,8 @@ class Contract(Base, TimestampMixin):
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    status_history: Mapped[list] = mapped_column(JSONB, default=list)
 
     # 关系
     project: Mapped["Project | None"] = relationship("Project")
