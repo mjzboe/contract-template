@@ -5,7 +5,7 @@ import pytest
 from httpx import AsyncClient
 
 
-async def _setup_project_with_template(client: AsyncClient) -> tuple[str, str, dict[str, str]]:
+async def _setup_project_with_template(client: AsyncClient, admin_headers: dict) -> tuple[str, str, dict[str, str]]:
     sample_path = os.path.join(
         os.path.dirname(__file__), "..", "..", "samples", "签字页模板_股东会决议.docx"
     )
@@ -14,6 +14,7 @@ async def _setup_project_with_template(client: AsyncClient) -> tuple[str, str, d
             "/api/v1/templates",
             data={"name": "合同测试模板", "tags": "[]"},
             files={"file": ("签字页模板_股东会决议.docx", f, "application/octet-stream")},
+            headers=admin_headers,
         )
     template_id = tmpl_resp.json()["template"]["id"]
     variables = tmpl_resp.json()["variables"]
@@ -25,6 +26,7 @@ async def _setup_project_with_template(client: AsyncClient) -> tuple[str, str, d
     proj_resp = await client.post(
         "/api/v1/projects",
         json={"name": "合同测试项目", "template_ids": [template_id]},
+        headers=admin_headers,
     )
     project_id = proj_resp.json()["id"]
 
@@ -32,8 +34,8 @@ async def _setup_project_with_template(client: AsyncClient) -> tuple[str, str, d
 
 
 @pytest.mark.asyncio
-async def test_preview_contract(client: AsyncClient):
-    project_id, template_id, var_values = await _setup_project_with_template(client)
+async def test_preview_contract(client: AsyncClient, admin_headers: dict):
+    project_id, template_id, var_values = await _setup_project_with_template(client, admin_headers)
     response = await client.post(
         "/api/v1/contracts/preview",
         json={"template_id": template_id, "variables": var_values},
@@ -45,8 +47,8 @@ async def test_preview_contract(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_generate_contract(client: AsyncClient):
-    project_id, template_id, var_values = await _setup_project_with_template(client)
+async def test_generate_contract(client: AsyncClient, admin_headers: dict):
+    project_id, template_id, var_values = await _setup_project_with_template(client, admin_headers)
     response = await client.post(
         "/api/v1/contracts",
         json={
@@ -55,6 +57,7 @@ async def test_generate_contract(client: AsyncClient):
             "variables": var_values,
             "project_id": project_id,
         },
+        headers=admin_headers,
     )
     assert response.status_code == 200
     data = response.json()
@@ -63,8 +66,8 @@ async def test_generate_contract(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_export_word(client: AsyncClient):
-    project_id, template_id, var_values = await _setup_project_with_template(client)
+async def test_export_word(client: AsyncClient, admin_headers: dict):
+    project_id, template_id, var_values = await _setup_project_with_template(client, admin_headers)
     gen_resp = await client.post(
         "/api/v1/contracts",
         json={
@@ -73,10 +76,12 @@ async def test_export_word(client: AsyncClient):
             "variables": var_values,
             "project_id": project_id,
         },
+        headers=admin_headers,
     )
     contract_id = gen_resp.json()["id"]
     response = await client.get(
-        f"/api/v1/contracts/{contract_id}/export?format=word"
+        f"/api/v1/contracts/{contract_id}/export?format=word",
+        headers=admin_headers,
     )
     assert response.status_code == 200
 
@@ -99,8 +104,8 @@ async def test_parse_excel(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_batch_generate_from_rows_sync(client: AsyncClient):
-    project_id, template_id, _ = await _setup_project_with_template(client)
+async def test_batch_generate_from_rows_sync(client: AsyncClient, admin_headers: dict):
+    project_id, template_id, _ = await _setup_project_with_template(client, admin_headers)
     rows = [
         {"公司名称": "公司A", "日期": "2024-01-01"},
         {"公司名称": "公司B", "日期": "2024-01-02"},
@@ -112,6 +117,7 @@ async def test_batch_generate_from_rows_sync(client: AsyncClient):
             "rows": rows,
             "selected_indices": [0, 1],
         },
+        headers=admin_headers,
     )
     assert response.status_code == 200
     data = response.json()
@@ -119,8 +125,8 @@ async def test_batch_generate_from_rows_sync(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_batch_generate_from_rows_async(client: AsyncClient):
-    project_id, template_id, _ = await _setup_project_with_template(client)
+async def test_batch_generate_from_rows_async(client: AsyncClient, admin_headers: dict):
+    project_id, template_id, _ = await _setup_project_with_template(client, admin_headers)
     rows = [
         {"公司名称": "异步公司A", "日期": "2024-01-01"},
         {"公司名称": "异步公司B", "日期": "2024-01-02"},
@@ -132,6 +138,7 @@ async def test_batch_generate_from_rows_async(client: AsyncClient):
             "rows": rows,
             "selected_indices": [0, 1],
         },
+        headers=admin_headers,
     )
     assert response.status_code == 200
     data = response.json()
@@ -140,12 +147,13 @@ async def test_batch_generate_from_rows_async(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_task_status(client: AsyncClient):
-    project_id, template_id, _ = await _setup_project_with_template(client)
+async def test_get_task_status(client: AsyncClient, admin_headers: dict):
+    project_id, template_id, _ = await _setup_project_with_template(client, admin_headers)
     rows = [{"公司名称": "状态测试公司", "日期": "2024-01-01"}]
     task_resp = await client.post(
         "/api/v1/contracts/batch-from-rows-async",
         json={"project_id": project_id, "rows": rows, "selected_indices": [0]},
+        headers=admin_headers,
     )
     task_id = task_resp.json()["task_id"]
     time.sleep(2)
@@ -156,21 +164,16 @@ async def test_get_task_status(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_download_zip(client: AsyncClient):
-    """异步 ZIP 下载测试
-
-    注意：异步任务使用独立的 database session（不走 dependency_overrides），
-    因此后台任务可能无法看到测试写入的数据。此测试验证接口响应格式正确。
-    """
-    project_id, template_id, _ = await _setup_project_with_template(client)
+async def test_download_zip(client: AsyncClient, admin_headers: dict):
+    project_id, template_id, _ = await _setup_project_with_template(client, admin_headers)
     rows = [{"公司名称": "ZIP测试公司", "日期": "2024-01-01"}]
     task_resp = await client.post(
         "/api/v1/contracts/batch-from-rows-async",
         json={"project_id": project_id, "rows": rows, "selected_indices": [0]},
+        headers=admin_headers,
     )
     assert task_resp.status_code == 200
     task_data = task_resp.json()
     assert "task_id" in task_data
-    # 验证任务状态接口可用
     status_resp = await client.get(f"/api/v1/contracts/tasks/{task_data['task_id']}")
     assert status_resp.status_code == 200

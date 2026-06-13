@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Q
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import require_role
+from app.models.user import User
 from app.schemas.template import (
     TemplateListResponse,
     TemplateResponse,
@@ -27,14 +28,12 @@ async def create_template(
     tags: str = Form("[]"),
     description: str | None = Form(None),
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(require_role("super_admin", "template_admin")),
 ):
     """上传模板文件并自动解析变量"""
-    # 验证文件类型
     if not file.filename or not file.filename.endswith((".docx", ".doc")):
         raise HTTPException(status_code=400, detail="仅支持 Word 文档（.docx/.doc）")
 
-    # 保存文件
     import json
 
     from app.config import settings
@@ -44,7 +43,6 @@ async def create_template(
         file_content, file.filename, settings.UPLOAD_DIR
     )
 
-    # 创建模板 + 解析变量
     try:
         import json as _json
 
@@ -61,16 +59,8 @@ async def create_template(
         description=description,
     )
 
-    user_id = None
-    uid = current_user.get("user_id")
-    if uid and uid != "dev-user":
-        try:
-            user_id = uuid.UUID(uid)
-        except (ValueError, AttributeError):
-            user_id = None
-
     template, variables = await template_service.create_template(
-        db, data, file_path, user_id=user_id
+        db, data, file_path, user_id=current_user.id
     )
     await db.commit()
 
@@ -118,6 +108,7 @@ async def update_template(
     template_id: uuid.UUID,
     data: TemplateUpdate,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_role("super_admin", "template_admin")),
 ):
     """更新模板信息"""
     template = await template_service.update_template(db, template_id, data)
@@ -131,6 +122,7 @@ async def update_template(
 async def delete_template(
     template_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_role("super_admin", "template_admin")),
 ):
     """删除模板"""
     success = await template_service.delete_template(db, template_id)

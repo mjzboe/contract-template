@@ -9,7 +9,8 @@ from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import require_role
+from app.models.user import User
 from app.schemas.contract import (
     AsyncTaskResponse,
     BatchGenerateFromRows,
@@ -47,17 +48,9 @@ async def preview_contract(
 async def generate_contract(
     data: ContractGenerate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
     """生成合同文档"""
-    user_id = None
-    uid = current_user.get("user_id")
-    if uid and uid != "dev-user":
-        try:
-            user_id = uuid.UUID(uid)
-        except (ValueError, AttributeError):
-            user_id = None
-
     try:
         contract = await contract_service.generate_contract(
             db,
@@ -66,7 +59,7 @@ async def generate_contract(
             variables=data.variables,
             project_id=data.project_id,
             template_version_id=data.template_version_id,
-            user_id=user_id,
+            user_id=current_user.id,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -112,13 +105,13 @@ async def export_contract(
     contract_id: uuid.UUID,
     format: str = Query("word", regex="^(word|docx|pdf)$"),
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
     """导出合同文件（下载）"""
     file_path = await contract_service.export_contract(db, contract_id, format)
     if not file_path:
         raise HTTPException(status_code=404, detail="合同或文件不存在")
 
-    import os
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="文件已丢失")
 
@@ -140,21 +133,12 @@ async def batch_generate(
     excel_file: UploadFile = File(...),
     project_id: uuid.UUID | None = Form(None),
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
     """批量生成合同：上传 Excel 文件，表头为变量名，每行为一组数据"""
     if not excel_file.filename or not excel_file.filename.endswith((".xlsx", ".xls")):
         raise HTTPException(status_code=400, detail="仅支持 Excel 文件（.xlsx/.xls）")
 
-    user_id = None
-    uid = current_user.get("user_id")
-    if uid and uid != "dev-user":
-        try:
-            user_id = uuid.UUID(uid)
-        except (ValueError, AttributeError):
-            user_id = None
-
-    # 保存 Excel 文件
     from app.config import settings
 
     file_content = await excel_file.read()
@@ -164,7 +148,7 @@ async def batch_generate(
 
     try:
         contracts = await contract_service.batch_generate_from_excel(
-            db, template_id, excel_path, project_id, user_id=user_id
+            db, template_id, excel_path, project_id, user_id=current_user.id
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -199,20 +183,12 @@ async def parse_excel(
 async def batch_generate_from_rows(
     data: BatchGenerateFromRows,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
     """从选中的行数据批量生成合同（每个模板各生成一份）"""
-    user_id = None
-    uid = current_user.get("user_id")
-    if uid and uid != "dev-user":
-        try:
-            user_id = uuid.UUID(uid)
-        except (ValueError, AttributeError):
-            user_id = None
-
     try:
         contracts = await contract_service.batch_generate_from_rows(
-            db, data.project_id, data.rows, data.selected_indices, user_id=user_id
+            db, data.project_id, data.rows, data.selected_indices, user_id=current_user.id
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -224,24 +200,16 @@ async def batch_generate_from_rows(
 @router.post("/batch-from-rows-async", response_model=AsyncTaskResponse)
 async def batch_generate_from_rows_async(
     data: BatchGenerateFromRows,
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
     """异步批量生成合同（返回任务 ID，前端轮询状态）"""
-    user_id = None
-    uid = current_user.get("user_id")
-    if uid and uid != "dev-user":
-        try:
-            user_id = uuid.UUID(uid)
-        except (ValueError, AttributeError):
-            user_id = None
-
     task = create_task("batch_generate")
 
     async def _do_generate():
         from app.database import async_session_factory
         async with async_session_factory() as session:
             contracts = await contract_service.batch_generate_from_rows(
-                session, data.project_id, data.rows, data.selected_indices, user_id=user_id
+                session, data.project_id, data.rows, data.selected_indices, user_id=current_user.id
             )
             await session.commit()
             for c in contracts:
@@ -323,6 +291,7 @@ def _task_to_response(task: AsyncTask) -> AsyncTaskResponse:
 async def delete_contract(
     contract_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_role("super_admin")),
 ):
     """删除合同"""
     success = await contract_service.delete_contract(db, contract_id)

@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import require_role
+from app.models.user import User
 from app.schemas.project import (
     DeduplicatedVariablesResponse,
     ProjectCreate,
@@ -25,18 +26,10 @@ router = APIRouter(prefix="/projects", tags=["项目管理"])
 async def create_project(
     data: ProjectCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
     """创建项目，关联模板并自动变量去重"""
-    user_id = None
-    uid = current_user.get("user_id")
-    if uid and uid != "dev-user":
-        try:
-            user_id = uuid.UUID(uid)
-        except (ValueError, AttributeError):
-            user_id = None
-
-    project = await project_service.create_project(db, data, user_id)
+    project = await project_service.create_project(db, data, current_user.id)
     await db.commit()
     return ProjectResponse.model_validate(project)
 
@@ -78,6 +71,7 @@ async def update_project(
     project_id: uuid.UUID,
     data: ProjectUpdate,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
     """更新项目信息（如更新模板列表会自动重新去重）"""
     project = await project_service.update_project(db, project_id, data)
@@ -91,6 +85,7 @@ async def update_project(
 async def delete_project(
     project_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_role("super_admin")),
 ):
     """删除项目"""
     success = await project_service.delete_project(db, project_id)

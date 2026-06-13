@@ -8,9 +8,9 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_full_e2e_flow(client: AsyncClient):
+async def test_full_e2e_flow(client: AsyncClient, admin_headers: dict):
     # 1. 创建分类
-    cat_resp = await client.post("/api/v1/categories", json={"name": "IPO签字页"})
+    cat_resp = await client.post("/api/v1/categories", json={"name": "IPO签字页"}, headers=admin_headers)
     assert cat_resp.status_code == 201
     category_id = cat_resp.json()["id"]
 
@@ -29,6 +29,7 @@ async def test_full_e2e_flow(client: AsyncClient):
                 "/api/v1/templates",
                 data={"name": filename.replace(".docx", ""), "tags": "[]", "category_id": str(category_id)},
                 files={"file": (filename, f, "application/octet-stream")},
+                headers=admin_headers,
             )
         assert resp.status_code == 200
         template_ids.append(resp.json()["template"]["id"])
@@ -38,6 +39,7 @@ async def test_full_e2e_flow(client: AsyncClient):
     proj_resp = await client.post(
         "/api/v1/projects",
         json={"name": "E2E测试-IPO签字页", "template_ids": template_ids},
+        headers=admin_headers,
     )
     assert proj_resp.status_code == 200
     project_id = proj_resp.json()["id"]
@@ -62,12 +64,13 @@ async def test_full_e2e_flow(client: AsyncClient):
             "variables": var_values,
             "project_id": project_id,
         },
+        headers=admin_headers,
     )
     assert contract_resp.status_code == 200
     contract_id = contract_resp.json()["id"]
 
     # 6. 导出 Word
-    export_resp = await client.get(f"/api/v1/contracts/{contract_id}/export?format=word")
+    export_resp = await client.get(f"/api/v1/contracts/{contract_id}/export?format=word", headers=admin_headers)
     assert export_resp.status_code == 200
 
     # 7. 上传 Excel → 解析
@@ -89,6 +92,7 @@ async def test_full_e2e_flow(client: AsyncClient):
             "rows": excel_data["rows"],
             "selected_indices": list(range(min(2, excel_data["total_rows"]))),
         },
+        headers=admin_headers,
     )
     assert batch_sync_resp.status_code == 200
     batch_contracts = batch_sync_resp.json()

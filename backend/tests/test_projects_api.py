@@ -5,11 +5,12 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_create_project(client: AsyncClient, sample_template):
+async def test_create_project(client: AsyncClient, admin_headers: dict, sample_template):
     template_id, _ = sample_template
     response = await client.post(
         "/api/v1/projects",
         json={"name": "测试项目", "template_ids": [template_id]},
+        headers=admin_headers,
     )
     assert response.status_code == 200
     data = response.json()
@@ -18,11 +19,12 @@ async def test_create_project(client: AsyncClient, sample_template):
 
 
 @pytest.mark.asyncio
-async def test_list_projects(client: AsyncClient, sample_template):
+async def test_list_projects(client: AsyncClient, admin_headers: dict, sample_template):
     template_id, _ = sample_template
     await client.post(
         "/api/v1/projects",
         json={"name": "项目列表测试", "template_ids": [template_id]},
+        headers=admin_headers,
     )
     response = await client.get("/api/v1/projects")
     assert response.status_code == 200
@@ -32,11 +34,12 @@ async def test_list_projects(client: AsyncClient, sample_template):
 
 
 @pytest.mark.asyncio
-async def test_get_project_detail(client: AsyncClient, sample_template):
+async def test_get_project_detail(client: AsyncClient, admin_headers: dict, sample_template):
     template_id, _ = sample_template
     create_resp = await client.post(
         "/api/v1/projects",
         json={"name": "项目详情测试", "template_ids": [template_id]},
+        headers=admin_headers,
     )
     project_id = create_resp.json()["id"]
     response = await client.get(f"/api/v1/projects/{project_id}")
@@ -47,11 +50,12 @@ async def test_get_project_detail(client: AsyncClient, sample_template):
 
 
 @pytest.mark.asyncio
-async def test_get_deduplicated_variables(client: AsyncClient, sample_template):
+async def test_get_deduplicated_variables(client: AsyncClient, admin_headers: dict, sample_template):
     template_id, _ = sample_template
     create_resp = await client.post(
         "/api/v1/projects",
         json={"name": "去重测试", "template_ids": [template_id]},
+        headers=admin_headers,
     )
     project_id = create_resp.json()["id"]
     response = await client.get(f"/api/v1/projects/{project_id}/deduplicated-variables")
@@ -63,7 +67,7 @@ async def test_get_deduplicated_variables(client: AsyncClient, sample_template):
 
 
 @pytest.mark.asyncio
-async def test_dedup_with_multiple_templates(client: AsyncClient):
+async def test_dedup_with_multiple_templates(client: AsyncClient, admin_headers: dict):
     samples_dir = os.path.join(os.path.dirname(__file__), "..", "..", "samples")
     template_ids = []
     for filename in ["签字页模板_股东会决议.docx", "签字页模板_董事会决议.docx"]:
@@ -73,12 +77,14 @@ async def test_dedup_with_multiple_templates(client: AsyncClient):
                 "/api/v1/templates",
                 data={"name": filename.replace(".docx", ""), "tags": "[]"},
                 files={"file": (filename, f, "application/octet-stream")},
+                headers=admin_headers,
             )
         template_ids.append(resp.json()["template"]["id"])
 
     create_resp = await client.post(
         "/api/v1/projects",
         json={"name": "多模板去重", "template_ids": template_ids},
+        headers=admin_headers,
     )
     project_id = create_resp.json()["id"]
     dedup_resp = await client.get(f"/api/v1/projects/{project_id}/deduplicated-variables")
