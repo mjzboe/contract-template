@@ -1,8 +1,10 @@
 """项目管理 API 路由"""
 
+import os
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -112,4 +114,63 @@ async def get_deduplicated_variables(
         total_variables_after_dedup=result["total_variables_after_dedup"],
         variables=[TemplateVarResp(**v) for v in result["variables"]],
         variable_sources=result["variable_sources"],
+    )
+
+
+@router.get("/{project_id}/excel-template")
+async def download_excel_template(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
+):
+    """根据项目去重变量动态生成 Excel 导入模板"""
+    result = await project_service.get_deduplicated_variables(db, project_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="项目不存在")
+
+    variables = result["variables"]
+    if not variables:
+        raise HTTPException(status_code=400, detail="项目无变量，无法生成模板")
+
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "变量导入"
+
+    # 第一行：变量名（作为表头，也是 Excel 导入时的列名）
+    for col, var in enumerate(variables, 1):
+        display_name = var.get("display_name") or var.get("name", "")
+        var_name = var.get("name", "")
+        ws.cell(row=1, column=col, value=var_name)
+
+        # 设置列宽
+        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = max(len(display_name) * 2 + 4, 16)
+
+    # 第二行：显示名提示行（灰色斜体，帮助用户理解每列含义）
+    for col, var in enumerate(variables, 1):
+        display_name = var.get("display_name") or var.get("name", "")
+        cell = ws.cell(row=2, column=col, value=display_name)
+        cell.font = cell.font.copy(italic=True, color="999999")
+
+    # 第三行：默认值（如有）
+    for col, var in enumerate(variables, 1):
+        default_val = var.get("default_value", "")
+        if default_val:
+            ws.cell(row=3, column=col, value=default_val)
+
+    # 保存到临时文件
+    from app.config import settings
+    template_dir = os.path.join(settings.UPLOAD_DIR, "excel_templates")
+    os.makedirs(template_dir, exist_ok=True)
+    file_path = os.path.join(template_dir, f"template_{project_id}.xlsx")
+    wb.save(file_path)
+
+    project_name = result.get("project_id", str(project_id))
+    filename = f"导入模板_{project_name}.xlsx"
+
+    return FileResponse(
+        path=file_path,
+        filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )

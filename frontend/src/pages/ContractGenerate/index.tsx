@@ -19,6 +19,7 @@ import {
   DownloadOutlined,
   DeleteOutlined,
   FileZipOutlined,
+  FileExcelOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import type {
@@ -298,6 +299,14 @@ export default function ContractGeneratePage() {
                   上传 Excel
                 </Button>
               </Upload>
+              {project && (
+                <Button
+                  icon={<FileExcelOutlined />}
+                  href={projectApi.getExcelTemplateUrl(project.id)}
+                >
+                  下载导入模板
+                </Button>
+              )}
               {excelData && (
                 <Button
                   type="link"

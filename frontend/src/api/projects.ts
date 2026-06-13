@@ -50,3 +50,8 @@ export async function getDeduplicatedVariables(id: string) {
   );
   return res.data;
 }
+
+// 获取 Excel 导入模板下载 URL
+export function getExcelTemplateUrl(projectId: string) {
+  return `/api/v1/projects/${projectId}/excel-template`;
+}
