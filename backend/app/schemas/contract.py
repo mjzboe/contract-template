@@ -37,6 +37,8 @@ class ContractResponse(BaseModel):
     file_path: str | None = None
     file_path_pdf: str | None = None
     status: str = "draft"
+    archived_at: datetime | None = None
+    status_history: list = []
     created_by: uuid.UUID | None = None
     created_at: datetime
     updated_at: datetime
@@ -81,3 +83,53 @@ class AsyncTaskResponse(BaseModel):
     total: int = 0
     result: dict | list | None = None
     error: str | None = None
+
+
+class ArchiveListItem(BaseModel):
+    """归档列表项（含关联名称）"""
+    id: uuid.UUID
+    title: str
+    status: str = "archived"
+    archived_at: datetime | None = None
+    template_id: uuid.UUID
+    template_name: str | None = None
+    project_id: uuid.UUID | None = None
+    project_name: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ArchiveListResponse(BaseModel):
+    items: list[ArchiveListItem]
+    total: int
+    page: int
+    page_size: int
+
+
+class StatusHistoryEntry(BaseModel):
+    """状态变更记录"""
+    status: str
+    at: str
+
+
+class ArchiveDetail(BaseModel):
+    """归档详情（含时间线和变量）"""
+    id: uuid.UUID
+    title: str
+    status: str = "archived"
+    archived_at: datetime | None = None
+    template_id: uuid.UUID
+    template_name: str | None = None
+    project_id: uuid.UUID | None = None
+    project_name: str | None = None
+    variables: dict = {}
+    status_history: list[StatusHistoryEntry] = []
+    file_path: str | None = None
+    file_path_pdf: str | None = None
+    created_by: uuid.UUID | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
