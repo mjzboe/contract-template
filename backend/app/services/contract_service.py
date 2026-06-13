@@ -3,7 +3,7 @@
 import os
 import uuid
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime
 
 from openpyxl import load_workbook
 from sqlalchemy import func, select
@@ -57,7 +57,7 @@ async def generate_contract(
     generate_docx(template_version.file_path, variables, output_path)
 
     # 创建 Contract 记录（自动归档）
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.utcnow().isoformat()
     contract = Contract(
         title=title,
         project_id=project_id,
@@ -66,7 +66,7 @@ async def generate_contract(
         variables=variables,
         file_path=output_path,
         status="archived",
-        archived_at=datetime.now(timezone.utc),
+        archived_at=datetime.utcnow(),
         status_history=[
             {"status": "draft", "at": now},
             {"status": "archived", "at": now},
@@ -236,7 +236,7 @@ async def batch_generate_from_rows(
             if safe_summary:
                 title += f" - {safe_summary}"
 
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.utcnow().isoformat()
             contract = Contract(
                 title=title,
                 project_id=project_id,
@@ -245,7 +245,7 @@ async def batch_generate_from_rows(
                 variables=variables,
                 file_path=output_path,
                 status="archived",
-                archived_at=datetime.now(timezone.utc),
+                archived_at=datetime.utcnow(),
                 status_history=[
                     {"status": "draft", "at": now},
                     {"status": "archived", "at": now},
@@ -340,7 +340,7 @@ async def batch_generate_from_excel(
         output_path = os.path.join(output_dir, output_filename)
         generate_docx(template_version.file_path, variables, output_path)
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.utcnow().isoformat()
         contract = Contract(
             title=title,
             project_id=project_id,
@@ -349,7 +349,7 @@ async def batch_generate_from_excel(
             variables=variables,
             file_path=output_path,
             status="archived",
-            archived_at=datetime.now(timezone.utc),
+            archived_at=datetime.utcnow(),
             status_history=[
                 {"status": "draft", "at": now},
                 {"status": "archived", "at": now},
