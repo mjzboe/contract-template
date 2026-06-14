@@ -68,10 +68,15 @@ async def download_archive(
             raise HTTPException(status_code=501, detail="PDF 转换不可用，请确保已安装 LibreOffice")
         raise HTTPException(status_code=404, detail="归档记录或文件不存在")
 
+    await db.commit()
+
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="文件已丢失")
 
     filename = os.path.basename(file_path)
+    # PDF 文件名确保后缀为 .pdf
+    if format == "pdf" and not filename.lower().endswith(".pdf"):
+        filename = os.path.splitext(filename)[0] + ".pdf"
     media_type = (
         "application/pdf" if format == "pdf"
         else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"

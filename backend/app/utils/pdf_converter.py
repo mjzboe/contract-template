@@ -16,6 +16,9 @@ def convert_docx_to_pdf(docx_path: str, output_dir: str | None = None) -> str | 
     """
     from app.config import settings
 
+    # 转为绝对路径
+    docx_path = os.path.abspath(docx_path)
+
     if not os.path.exists(docx_path):
         return None
 
@@ -24,6 +27,8 @@ def convert_docx_to_pdf(docx_path: str, output_dir: str | None = None) -> str | 
 
     if not output_dir:
         output_dir = os.path.dirname(docx_path)
+    else:
+        output_dir = os.path.abspath(output_dir)
 
     os.makedirs(output_dir, exist_ok=True)
 
