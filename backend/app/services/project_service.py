@@ -1,5 +1,6 @@
 """项目服务层：项目 CRUD、跨模板变量去重"""
 
+import os
 import uuid
 
 from sqlalchemy import func, select
@@ -151,10 +152,32 @@ async def update_project(
 
 
 async def delete_project(db: AsyncSession, project_id: uuid.UUID) -> bool:
-    """删除项目"""
+    """删除项目（级联删除关联合同、解除模板关联）"""
     project = await get_project(db, project_id)
     if not project:
         return False
+
+    # 解除项目-模板多对多关联
+    from app.models.project import project_templates
+    from sqlalchemy import delete as sql_delete
+    await db.execute(
+        sql_delete(project_templates).where(project_templates.c.project_id == project_id)
+    )
+
+    # 删除关联的合同及其文件
+    from app.models.contract import Contract
+    from sqlalchemy import select as sql_select
+    result = await db.execute(
+        sql_select(Contract).where(Contract.project_id == project_id)
+    )
+    contracts = list(result.scalars().all())
+    for contract in contracts:
+        if contract.file_path and os.path.exists(contract.file_path):
+            os.remove(contract.file_path)
+        if contract.file_path_pdf and os.path.exists(contract.file_path_pdf):
+            os.remove(contract.file_path_pdf)
+        await db.delete(contract)
+
     await db.delete(project)
     await db.flush()
     return True
