@@ -27,6 +27,13 @@ from app.services.template_service import save_upload_file
 
 router = APIRouter(prefix="/contracts", tags=["合同生成"])
 
+ADMIN_ROLES = {"super_admin", "template_admin"}
+
+
+def _can_access_contract(contract, user: User) -> bool:
+    """检查用户是否有权访问该合同"""
+    return user.role in ADMIN_ROLES or contract.created_by == user.id
+
 
 @router.post("/preview", response_model=ContractPreviewResponse)
 async def preview_contract(
@@ -75,10 +82,13 @@ async def list_contracts(
     project_id: uuid.UUID | None = None,
     status: str | None = None,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
-    """合同列表"""
+    """合同列表（普通用户只看自己创建的）"""
+    is_admin = current_user.role in ("super_admin", "template_admin")
     contracts, total = await contract_service.list_contracts(
-        db, page, page_size, project_id, status
+        db, page, page_size, project_id, status,
+        user_id=current_user.id, is_admin=is_admin,
     )
     return ContractListResponse(
         items=[ContractResponse.model_validate(c) for c in contracts],
@@ -92,11 +102,14 @@ async def list_contracts(
 async def get_contract(
     contract_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
     """合同详情"""
     contract = await contract_service.get_contract(db, contract_id)
     if not contract:
         raise HTTPException(status_code=404, detail="合同不存在")
+    if not _can_access_contract(contract, current_user):
+        raise HTTPException(status_code=403, detail="无权访问此合同")
     return ContractResponse.model_validate(contract)
 
 
@@ -105,9 +118,14 @@ async def export_contract(
     contract_id: uuid.UUID,
     format: str = Query("word", regex="^(word|docx|pdf)$"),
     db: AsyncSession = Depends(get_db),
-    _user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
+    current_user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
     """导出合同文件（下载）"""
+    contract = await contract_service.get_contract(db, contract_id)
+    if not contract:
+        raise HTTPException(status_code=404, detail="合同不存在")
+    if not _can_access_contract(contract, current_user):
+        raise HTTPException(status_code=403, detail="无权导出此合同")
     file_path = await contract_service.export_contract(db, contract_id, format)
     if not file_path:
         if format == "pdf":
@@ -265,10 +283,13 @@ async def download_task_zip(task_id: str):
 async def download_project_zip(
     project_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
     """下载项目下所有合同的 zip 包"""
+    is_admin = current_user.role in ("super_admin", "template_admin")
     contracts, _ = await contract_service.list_contracts(
-        db, page=1, page_size=1000, project_id=project_id
+        db, page=1, page_size=1000, project_id=project_id,
+        user_id=current_user.id, is_admin=is_admin,
     )
     if not contracts:
         raise HTTPException(status_code=404, detail="项目下无合同")
