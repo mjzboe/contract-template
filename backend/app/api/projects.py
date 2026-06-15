@@ -23,6 +23,13 @@ from app.services import project_service
 
 router = APIRouter(prefix="/projects", tags=["项目管理"])
 
+ADMIN_ROLES = {"super_admin", "template_admin"}
+
+
+def _can_access(project, user: User) -> bool:
+    """检查用户是否有权访问该项目"""
+    return user.role in ADMIN_ROLES or project.created_by == user.id
+
 
 @router.post("", response_model=ProjectResponse)
 async def create_project(
@@ -43,10 +50,13 @@ async def list_projects(
     keyword: str | None = None,
     status: str | None = None,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
-    """项目列表"""
+    """项目列表（普通用户只看自己创建的）"""
+    is_admin = current_user.role in ("super_admin", "template_admin")
     projects, total = await project_service.list_projects(
-        db, page, page_size, keyword, status
+        db, page, page_size, keyword, status,
+        user_id=current_user.id, is_admin=is_admin,
     )
     return ProjectListResponse(
         items=[ProjectResponse.model_validate(p) for p in projects],
@@ -60,11 +70,14 @@ async def list_projects(
 async def get_project(
     project_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
     """项目详情"""
     project = await project_service.get_project(db, project_id)
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
+    if not _can_access(project, current_user):
+        raise HTTPException(status_code=403, detail="无权访问此项目")
     return ProjectResponse.model_validate(project)
 
 
@@ -73,9 +86,14 @@ async def update_project(
     project_id: uuid.UUID,
     data: ProjectUpdate,
     db: AsyncSession = Depends(get_db),
-    _user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
+    current_user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
     """更新项目信息（如更新模板列表会自动重新去重）"""
+    project = await project_service.get_project(db, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="项目不存在")
+    if not _can_access(project, current_user):
+        raise HTTPException(status_code=403, detail="无权修改此项目")
     project = await project_service.update_project(db, project_id, data)
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
@@ -101,6 +119,7 @@ async def delete_project(
 async def get_deduplicated_variables(
     project_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("user", "template_admin", "approver", "super_admin")),
 ):
     """获取项目的跨模板去重变量，含来源映射"""
     result = await project_service.get_deduplicated_variables(db, project_id)

@@ -45,7 +45,7 @@ async def test_full_e2e_flow(client: AsyncClient, admin_headers: dict):
     project_id = proj_resp.json()["id"]
 
     # 4. 获取去重变量
-    dedup_resp = await client.get(f"/api/v1/projects/{project_id}/deduplicated-variables")
+    dedup_resp = await client.get(f"/api/v1/projects/{project_id}/deduplicated-variables", headers=admin_headers)
     assert dedup_resp.status_code == 200
     dedup_data = dedup_resp.json()
     assert dedup_data["template_count"] == 3

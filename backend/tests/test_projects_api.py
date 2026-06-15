@@ -26,7 +26,7 @@ async def test_list_projects(client: AsyncClient, admin_headers: dict, sample_te
         json={"name": "项目列表测试", "template_ids": [template_id]},
         headers=admin_headers,
     )
-    response = await client.get("/api/v1/projects")
+    response = await client.get("/api/v1/projects", headers=admin_headers)
     assert response.status_code == 200
     data = response.json()
     assert "items" in data
@@ -42,7 +42,7 @@ async def test_get_project_detail(client: AsyncClient, admin_headers: dict, samp
         headers=admin_headers,
     )
     project_id = create_resp.json()["id"]
-    response = await client.get(f"/api/v1/projects/{project_id}")
+    response = await client.get(f"/api/v1/projects/{project_id}", headers=admin_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == project_id
@@ -58,7 +58,7 @@ async def test_get_deduplicated_variables(client: AsyncClient, admin_headers: di
         headers=admin_headers,
     )
     project_id = create_resp.json()["id"]
-    response = await client.get(f"/api/v1/projects/{project_id}/deduplicated-variables")
+    response = await client.get(f"/api/v1/projects/{project_id}/deduplicated-variables", headers=admin_headers)
     assert response.status_code == 200
     data = response.json()
     assert "variables" in data
@@ -87,7 +87,7 @@ async def test_dedup_with_multiple_templates(client: AsyncClient, admin_headers:
         headers=admin_headers,
     )
     project_id = create_resp.json()["id"]
-    dedup_resp = await client.get(f"/api/v1/projects/{project_id}/deduplicated-variables")
+    dedup_resp = await client.get(f"/api/v1/projects/{project_id}/deduplicated-variables", headers=admin_headers)
     data = dedup_resp.json()
     shared_vars = {
         name: sources for name, sources in data["variable_sources"].items()
