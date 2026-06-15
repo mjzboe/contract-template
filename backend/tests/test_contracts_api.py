@@ -177,3 +177,84 @@ async def test_download_zip(client: AsyncClient, admin_headers: dict):
     assert "task_id" in task_data
     status_resp = await client.get(f"/api/v1/contracts/tasks/{task_data['task_id']}")
     assert status_resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_contract_user_isolation(
+    client: AsyncClient, user_headers: dict, admin_headers: dict
+):
+    """用户 A 生成的合同，用户 B 无法查看详情"""
+    project_id, template_id, _ = await _setup_project_with_template(client, admin_headers)
+    gen_resp = await client.post(
+        "/api/v1/contracts",
+        json={
+            "title": "隔离测试合同",
+            "template_id": template_id,
+            "variables": {"公司名称": "隔离公司"},
+            "project_id": project_id,
+        },
+        headers=admin_headers,
+    )
+    contract_id = gen_resp.json()["id"]
+    # 普通用户无法访问 admin 的合同
+    resp = await client.get(f"/api/v1/contracts/{contract_id}", headers=user_headers)
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_contract_export_isolation(
+    client: AsyncClient, user_headers: dict, admin_headers: dict
+):
+    """用户 B 无法导出用户 A 的合同"""
+    project_id, template_id, _ = await _setup_project_with_template(client, admin_headers)
+    gen_resp = await client.post(
+        "/api/v1/contracts",
+        json={
+            "title": "导出隔离测试",
+            "template_id": template_id,
+            "variables": {"公司名称": "隔离公司"},
+            "project_id": project_id,
+        },
+        headers=admin_headers,
+    )
+    contract_id = gen_resp.json()["id"]
+    # 普通用户无法导出 admin 的合同
+    resp = await client.get(
+        f"/api/v1/contracts/{contract_id}/export", params={"format": "word"}, headers=user_headers
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_contract_list_user_scoping(
+    client: AsyncClient, user_headers: dict, admin_headers: dict
+):
+    """普通用户合同列表只返回自己的"""
+    project_id, template_id, _ = await _setup_project_with_template(client, admin_headers)
+    # admin 生成合同
+    await client.post(
+        "/api/v1/contracts",
+        json={
+            "title": "管理员合同",
+            "template_id": template_id,
+            "variables": {"公司名称": "Admin"},
+            "project_id": project_id,
+        },
+        headers=admin_headers,
+    )
+    # 普通用户生成合同
+    await client.post(
+        "/api/v1/contracts",
+        json={
+            "title": "用户合同",
+            "template_id": template_id,
+            "variables": {"公司名称": "User"},
+        },
+        headers=user_headers,
+    )
+    # 普通用户列表
+    resp = await client.get("/api/v1/contracts", headers=user_headers)
+    assert resp.status_code == 200
+    titles = [item["title"] for item in resp.json()["items"]]
+    assert "管理员合同" not in titles
+    assert "用户合同" in titles

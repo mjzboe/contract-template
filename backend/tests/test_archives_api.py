@@ -168,3 +168,66 @@ async def test_archives_require_auth(client: AsyncClient):
     """归档 API 需要认证"""
     resp = await client.get("/api/v1/archives")
     assert resp.status_code in (401, 403)
+
+
+@pytest.mark.asyncio
+async def test_archive_user_isolation(
+    client: AsyncClient, user_headers: dict, admin_headers: dict, sample_template: tuple
+):
+    """非创建者无法查看他人归档详情"""
+    template_id, _ = sample_template
+    # admin 生成合同（自动归档）
+    gen_resp = await client.post(
+        "/api/v1/contracts",
+        json={"title": "归档隔离测试", "template_id": template_id, "variables": {"公司名称": "测试"}},
+        headers=admin_headers,
+    )
+    contract_id = gen_resp.json()["id"]
+    # 普通用户无法访问 admin 的归档
+    resp = await client.get(f"/api/v1/archives/{contract_id}", headers=user_headers)
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_archive_download_isolation(
+    client: AsyncClient, user_headers: dict, admin_headers: dict, sample_template: tuple
+):
+    """非创建者无法下载他人归档文件"""
+    template_id, _ = sample_template
+    gen_resp = await client.post(
+        "/api/v1/contracts",
+        json={"title": "归档下载隔离", "template_id": template_id, "variables": {"公司名称": "测试"}},
+        headers=admin_headers,
+    )
+    contract_id = gen_resp.json()["id"]
+    # 普通用户无法下载 admin 的归档
+    resp = await client.get(
+        f"/api/v1/archives/{contract_id}/download", params={"format": "word"}, headers=user_headers
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_archive_list_user_scoping(
+    client: AsyncClient, user_headers: dict, admin_headers: dict, sample_template: tuple
+):
+    """普通用户归档列表只返回自己创建的"""
+    template_id, _ = sample_template
+    # admin 生成合同
+    await client.post(
+        "/api/v1/contracts",
+        json={"title": "管理员归档", "template_id": template_id, "variables": {"公司名称": "Admin"}},
+        headers=admin_headers,
+    )
+    # 普通用户生成合同
+    await client.post(
+        "/api/v1/contracts",
+        json={"title": "用户归档", "template_id": template_id, "variables": {"公司名称": "User"}},
+        headers=user_headers,
+    )
+    # 普通用户归档列表
+    resp = await client.get("/api/v1/archives", headers=user_headers)
+    assert resp.status_code == 200
+    titles = [item["title"] for item in resp.json()["items"]]
+    assert "管理员归档" not in titles
+    assert "用户归档" in titles
