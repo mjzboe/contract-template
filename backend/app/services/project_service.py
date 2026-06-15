@@ -81,14 +81,18 @@ async def list_projects(
     page_size: int = 20,
     keyword: str | None = None,
     status: str | None = None,
+    user_id: uuid.UUID | None = None,
+    is_admin: bool = False,
 ) -> tuple[list[Project], int]:
-    """项目列表"""
+    """项目列表（普通用户只看自己创建的，管理员看全部）"""
     query = select(Project).options(selectinload(Project.templates).selectinload(Template.versions))
 
     if keyword:
         query = query.where(Project.name.ilike(f"%{keyword}%"))
     if status:
         query = query.where(Project.status == status)
+    if not is_admin and user_id:
+        query = query.where(Project.created_by == user_id)
 
     count_query = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_query)).scalar() or 0

@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import AppLayout from "./components/AppLayout";
 import HomePage from "./pages/Home";
 import TemplateManagePage from "./pages/TemplateManage";
+import ProjectManagePage from "./pages/ProjectManage";
 import ContractGeneratePage from "./pages/ContractGenerate";
 import ApprovalCenterPage from "./pages/ApprovalCenter";
 import ArchiveSearchPage from "./pages/ArchiveSearch";
@@ -41,6 +42,7 @@ function AppRoutes() {
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/templates" element={<TemplateManagePage />} />
+                <Route path="/projects" element={<ProjectManagePage />} />
                 <Route path="/contracts" element={<ContractGeneratePage />} />
                 <Route path="/approvals" element={<ApprovalCenterPage />} />
                 <Route path="/archives" element={<ArchiveSearchPage />} />

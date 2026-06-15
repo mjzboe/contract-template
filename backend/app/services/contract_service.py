@@ -93,14 +93,18 @@ async def list_contracts(
     page_size: int = 20,
     project_id: uuid.UUID | None = None,
     status: str | None = None,
+    user_id: uuid.UUID | None = None,
+    is_admin: bool = False,
 ) -> tuple[list[Contract], int]:
-    """合同列表"""
+    """合同列表（普通用户只看自己创建的，管理员看全部）"""
     query = select(Contract)
 
     if project_id:
         query = query.where(Contract.project_id == project_id)
     if status:
         query = query.where(Contract.status == status)
+    if not is_admin and user_id:
+        query = query.where(Contract.created_by == user_id)
 
     count_query = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_query)).scalar() or 0

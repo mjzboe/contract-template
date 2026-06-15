@@ -21,8 +21,10 @@ async def list_archives(
     project_id: uuid.UUID | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    user_id: uuid.UUID | None = None,
+    is_admin: bool = False,
 ) -> tuple[list[dict], int]:
-    """归档列表（带关联名称）"""
+    """归档列表（普通用户只看自己创建的，管理员看全部）"""
     query = (
         select(Contract, Template.name.label("template_name"), Project.name.label("project_name"))
         .outerjoin(Template, Contract.template_id == Template.id)
@@ -40,6 +42,8 @@ async def list_archives(
         query = query.where(Contract.archived_at >= datetime.combine(date_from, datetime.min.time()))
     if date_to:
         query = query.where(Contract.archived_at <= datetime.combine(date_to, datetime.max.time()))
+    if not is_admin and user_id:
+        query = query.where(Contract.created_by == user_id)
 
     count_query = select(func.count()).select_from(query.subquery())
     total = (await db.execute(count_query)).scalar() or 0
@@ -122,7 +126,6 @@ async def get_archive_file_path(
         if contract.file_path_pdf and os.path.exists(contract.file_path_pdf):
             return contract.file_path_pdf
 
-        # 即时转换 DOCX → PDF
         from app.utils.pdf_converter import convert_docx_to_pdf, is_libreoffice_available
         if not is_libreoffice_available():
             return None

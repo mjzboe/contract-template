@@ -2,6 +2,7 @@ import { Layout, Menu, Dropdown, Avatar, Space, Typography } from "antd";
 import {
   HomeOutlined,
   FileTextOutlined,
+  ProjectOutlined,
   FormOutlined,
   AuditOutlined,
   FolderOpenOutlined,
@@ -22,6 +23,7 @@ const ALL_MENU_ITEMS = [
   { key: "/", icon: <HomeOutlined />, label: "首页", roles: ["super_admin", "template_admin", "approver", "user"] },
   { key: "/templates", icon: <FileTextOutlined />, label: "模板管理", roles: ["super_admin", "template_admin", "approver", "user"] },
   { key: "/contracts", icon: <FormOutlined />, label: "合同生成", roles: ["super_admin", "template_admin", "approver", "user"] },
+  { key: "/projects", icon: <ProjectOutlined />, label: "项目管理", roles: ["super_admin", "template_admin", "approver", "user"] },
   { key: "/approvals", icon: <AuditOutlined />, label: "审批中心", roles: ["super_admin", "approver"] },
   { key: "/archives", icon: <FolderOpenOutlined />, label: "档案检索", roles: ["super_admin", "template_admin", "approver", "user"] },
   { key: "/audit-logs", icon: <SafetyCertificateOutlined />, label: "审计日志", roles: ["super_admin"] },

@@ -42,7 +42,7 @@ export async function downloadArchive(id: string, format: string = "word") {
   }
   const blob = await res.blob();
   const disposition = res.headers.get("content-disposition");
-  let filename = `archive_${id}.docx`;
+  let filename = `archive_${id}.${format === "pdf" ? "pdf" : "docx"}`;
   if (disposition) {
     const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";\n]+)"?/i);
     if (match) filename = decodeURIComponent(match[1].trim());

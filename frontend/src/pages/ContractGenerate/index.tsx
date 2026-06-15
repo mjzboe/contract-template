@@ -13,7 +13,11 @@ import {
   Alert,
   Divider,
   Progress,
+  Spin,
+  Typography,
 } from "antd";
+
+const { Text } = Typography;
 import {
   UploadOutlined,
   DownloadOutlined,
@@ -21,7 +25,7 @@ import {
   FileZipOutlined,
   FileExcelOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type {
   TemplateResponse,
   ProjectResponse,
@@ -36,6 +40,7 @@ import * as contractApi from "../../api/contracts";
 
 export default function ContractGeneratePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [current, setCurrent] = useState(0);
 
   // Step 1: 选模板
@@ -63,6 +68,46 @@ export default function ContractGeneratePage() {
   const [taskStatus, setTaskStatus] = useState<AsyncTaskResponse | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // 加载已有项目（从 URL 参数）
+  const [loadingExisting, setLoadingExisting] = useState(false);
+
+  useEffect(() => {
+    const existingId = searchParams.get("project_id");
+    if (existingId) {
+      setLoadingExisting(true);
+      projectApi.getProject(existingId).then((proj) => {
+        setProject(proj);
+        setProjectName(proj.name);
+        setSelectedIds((proj.templates || []).map((t) => t.id));
+
+        const hasTemplates = proj.templates && proj.templates.length > 0;
+        if (hasTemplates) {
+          // 已有关联模板 → 直接跳到 Step 2 填变量
+          projectApi.getDeduplicatedVariables(proj.id).then((dedup) => {
+            setDedupInfo(dedup);
+            const init: Record<string, string> = {};
+            dedup.variables.forEach((v) => { init[v.name] = v.default_value || ""; });
+            setVarValues(init);
+            setCurrent(1);
+            setLoadingExisting(false);
+            message.success(`已加载项目「${proj.name}」，关联 ${proj.templates.length} 个模板`);
+          }).catch(() => {
+            setLoadingExisting(false);
+            message.error("加载项目变量失败");
+          });
+        } else {
+          // 无关联模板 → 停在 Step 1 选模板
+          setCurrent(0);
+          setLoadingExisting(false);
+          message.info(`项目「${proj.name}」尚未关联模板，请先选择模板`);
+        }
+      }).catch(() => {
+        setLoadingExisting(false);
+        message.error("加载项目失败");
+      });
+    }
+  }, [searchParams]);
+
   // 加载模板列表
   useEffect(() => {
     templateApi.listTemplates({ page: 1, page_size: 100 }).then((res) => {
@@ -73,17 +118,27 @@ export default function ContractGeneratePage() {
     };
   }, []);
 
-  // ========== Step 1: 创建项目 ==========
+  // ========== Step 1: 创建/更新项目 ==========
   const handleCreateProject = async () => {
     if (!projectName.trim()) { message.warning("请输入项目名称"); return; }
     if (selectedIds.length === 0) { message.warning("请选择至少一个模板"); return; }
 
     setCreating(true);
     try {
-      const proj = await projectApi.createProject({
-        name: projectName,
-        template_ids: selectedIds,
-      });
+      let proj: ProjectResponse;
+      if (project) {
+        // 项目已存在（从项目管理跳来），更新模板关联
+        proj = await projectApi.updateProject(project.id, {
+          name: projectName,
+          template_ids: selectedIds,
+        });
+      } else {
+        // 新建项目
+        proj = await projectApi.createProject({
+          name: projectName,
+          template_ids: selectedIds,
+        });
+      }
       setProject(proj);
       const dedup = await projectApi.getDeduplicatedVariables(proj.id);
       setDedupInfo(dedup);
@@ -91,9 +146,9 @@ export default function ContractGeneratePage() {
       dedup.variables.forEach((v) => { init[v.name] = v.default_value || ""; });
       setVarValues(init);
       setCurrent(1);
-      message.success("项目创建成功，变量已去重");
+      message.success(project ? "模板关联已更新，变量已去重" : "项目创建成功，变量已去重");
     } catch {
-      message.error("创建项目失败");
+      message.error(project ? "更新项目失败" : "创建项目失败");
     } finally {
       setCreating(false);
     }
@@ -198,6 +253,13 @@ export default function ContractGeneratePage() {
 
   return (
     <div style={{ animation: "fadeIn 0.3s ease-out" }}>
+      {loadingExisting && (
+        <Card>
+          <Spin tip="加载项目中..." style={{ display: "block", padding: "60px 0" }} />
+        </Card>
+      )}
+      {!loadingExisting && (
+      <>
       <Steps current={current} items={steps} style={{ marginBottom: 28 }} />
 
       {/* Step 1 */}
@@ -244,7 +306,7 @@ export default function ContractGeneratePage() {
               disabled={selectedIds.length === 0}
               onClick={handleCreateProject}
             >
-              下一步：填写变量（已选 {selectedIds.length} 个模板）
+              {project ? "确认模板，填写变量" : "下一步：填写变量"}（已选 {selectedIds.length} 个模板）
             </Button>
           </Space>
         </Card>
@@ -252,12 +314,24 @@ export default function ContractGeneratePage() {
 
       {/* Step 2 */}
       {current === 1 && dedupInfo && (
-        <Card title={<span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 17, fontWeight: 500 }}>填写变量</span>}>
+        <Card title={<span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 17, fontWeight: 500 }}>填写变量 — {project?.name || projectName}</span>}>
           <Space direction="vertical" style={{ width: "100%" }} size="middle">
             <Alert
               type="info"
               message={`去重结果：${dedupInfo.total_variables_before_dedup} 个变量 → ${dedupInfo.total_variables_after_dedup} 个（减少 ${dedupInfo.total_variables_before_dedup - dedupInfo.total_variables_after_dedup} 个重复）`}
             />
+
+            {/* 关联模板展示 */}
+            {project?.templates && project.templates.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <Text type="secondary" style={{ fontSize: 13 }}>关联模板：</Text>
+                {project.templates.map((t) => (
+                  <Tag key={t.id} style={{ borderRadius: 6, borderColor: "#E8E4DF" }}>
+                    {t.name}
+                  </Tag>
+                ))}
+              </div>
+            )}
 
             {/* 手动填写变量 */}
             <Form layout="vertical" style={{ maxWidth: 600 }}>
@@ -466,6 +540,8 @@ export default function ContractGeneratePage() {
             </Space>
           </Space>
         </Card>
+      )}
+      </>
       )}
     </div>
   );

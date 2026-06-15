@@ -79,7 +79,7 @@ async function downloadFile(url: string, defaultFilename: string) {
 
 // 带认证的合同文件下载
 export async function downloadContract(id: string, format: string = "word") {
-  await downloadFile(getExportUrl(id, format), `contract_${id}.docx`);
+  await downloadFile(getExportUrl(id, format), `contract_${id}.${format === "pdf" ? "pdf" : "docx"}`);
 }
 
 // 删除合同

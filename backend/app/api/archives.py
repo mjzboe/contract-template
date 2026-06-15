@@ -27,11 +27,13 @@ async def list_archives(
     date_from: date | None = None,
     date_to: date | None = None,
     db: AsyncSession = Depends(get_db),
-    _user: User = Depends(require_role("super_admin", "template_admin", "approver", "user")),
+    current_user: User = Depends(require_role("super_admin", "template_admin", "approver", "user")),
 ):
-    """归档列表（支持关键词、模板、项目、时间范围过滤）"""
+    """归档列表（普通用户只看自己创建的）"""
+    is_admin = current_user.role in ("super_admin", "template_admin")
     items, total = await archive_service.list_archives(
-        db, page, page_size, keyword, template_id, project_id, date_from, date_to
+        db, page, page_size, keyword, template_id, project_id, date_from, date_to,
+        user_id=current_user.id, is_admin=is_admin,
     )
     return ArchiveListResponse(
         items=[ArchiveListItem(**item) for item in items],
@@ -45,12 +47,15 @@ async def list_archives(
 async def get_archive_detail(
     contract_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _user: User = Depends(require_role("super_admin", "template_admin", "approver", "user")),
+    current_user: User = Depends(require_role("super_admin", "template_admin", "approver", "user")),
 ):
     """归档详情（含操作时间线和变量）"""
     detail = await archive_service.get_archive_detail(db, contract_id)
     if not detail:
         raise HTTPException(status_code=404, detail="归档记录不存在")
+    is_admin = current_user.role in ("super_admin", "template_admin")
+    if not is_admin and detail.get("created_by") != current_user.id:
+        raise HTTPException(status_code=403, detail="无权访问此归档")
     return ArchiveDetail(**detail)
 
 
@@ -59,9 +64,15 @@ async def download_archive(
     contract_id: uuid.UUID,
     format: str = Query("word", regex="^(word|docx|pdf)$"),
     db: AsyncSession = Depends(get_db),
-    _user: User = Depends(require_role("super_admin", "template_admin", "approver", "user")),
+    current_user: User = Depends(require_role("super_admin", "template_admin", "approver", "user")),
 ):
     """下载归档文件"""
+    detail = await archive_service.get_archive_detail(db, contract_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="归档记录不存在")
+    is_admin = current_user.role in ("super_admin", "template_admin")
+    if not is_admin and detail.get("created_by") != current_user.id:
+        raise HTTPException(status_code=403, detail="无权下载此归档")
     file_path = await archive_service.get_archive_file_path(db, contract_id, format)
     if not file_path:
         if format == "pdf":

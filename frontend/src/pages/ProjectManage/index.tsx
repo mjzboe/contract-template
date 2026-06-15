@@ -189,9 +189,22 @@ export default function ProjectManagePage() {
       },
     },
     {
-      title: "模板数",
-      width: 80,
-      render: (_: unknown, r: ProjectResponse) => r.templates?.length || 0,
+      title: "关联模板",
+      width: 200,
+      render: (_: unknown, r: ProjectResponse) => {
+        if (!r.templates || r.templates.length === 0) {
+          return <Text style={{ color: "#BFBFBF", fontSize: 13 }}>无</Text>;
+        }
+        return (
+          <Space size={4} wrap>
+            {r.templates.map((t) => (
+              <Tag key={t.id} style={{ borderRadius: 6, borderColor: "#E8E4DF" }}>
+                {t.name}
+              </Tag>
+            ))}
+          </Space>
+        );
+      },
     },
     {
       title: "去重变量",
@@ -447,10 +460,16 @@ export default function ProjectManagePage() {
               mode="multiple"
               placeholder="选择模板"
               optionFilterProp="label"
-              options={allTemplates.map((t) => ({
-                value: t.id,
-                label: t.name,
-              }))}
+              options={(() => {
+                const existingIds = new Set(allTemplates.map((t) => t.id));
+                const extraOptions = (editingTemplates || [])
+                  .filter((t) => !existingIds.has(t.id))
+                  .map((t) => ({ value: t.id, label: t.name }));
+                return [
+                  ...allTemplates.map((t) => ({ value: t.id, label: t.name })),
+                  ...extraOptions,
+                ];
+              })()}
             />
           </Form.Item>
         </Form>
