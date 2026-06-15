@@ -16,6 +16,13 @@ Object.defineProperty(window, "matchMedia", {
   }),
 });
 
+// Polyfill for ResizeObserver (needed by Ant Design Select/Modal)
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 beforeAll(() => server.listen({ onUnhandledRequest: "bypass" }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());

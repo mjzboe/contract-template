@@ -81,6 +81,15 @@ export const handlers = [
   ),
   http.post("/api/v1/projects", async () => HttpResponse.json(mockProject)),
   http.get("/api/v1/projects/:id", () => HttpResponse.json(mockProject)),
+  http.put("/api/v1/projects/:id", async () =>
+    HttpResponse.json({
+      ...mockProject,
+      name: "更新后项目",
+    })
+  ),
+  http.delete("/api/v1/projects/:id", () =>
+    HttpResponse.json({ message: "删除成功" })
+  ),
   http.get("/api/v1/projects/:id/deduplicated-variables", () =>
     HttpResponse.json({
       project_id: "mock-project-id-1",
