@@ -595,3 +595,4 @@ Must include:
 - [2026-06-13] 第7步 | 全局 | 完成项目报告撰写（9个必选部分 + 4个Mermaid图表 + AI使用日志），Pandoc 导出 Word
 - [2026-06-13] 第7步 | 全局 | **第7步完成** — 项目全部7个步骤完成
 - [2026-06-13] 新增 | 模块3.5 | 完成档案归档与检索功能：Contract 模型扩展（archived_at + status_history）、自动归档（generate/batch 生成后 status=archived）、归档检索 API（/archives 列表+详情+下载，支持关键词/模板/项目/时间过滤）、前端 ArchiveSearchPage 重写（搜索栏+表格+详情弹窗+操作时间线+文件下载）、8 个后端测试通过
+- [2026-06-15] 第6步 | RBAC+项目管理 | 完成测试重写：RBAC 权限矩阵测试 28 个（无 token 保护 + DELETE 角色权限 + 资源隔离 + 列表用户隔离 + 更新隔离）、项目管理 CRUD 测试 +6 个、合同/档案隔离测试 +6 个、前端 ProjectManage 测试 8 个；修复 dedup 端点缺少 require_role、合同导出缺少 _can_access_contract 检查；后端 116 个测试通过，前端 18 个测试通过
