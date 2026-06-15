@@ -1,3 +1,5 @@
+import os
+
 from pydantic_settings import BaseSettings
 
 
@@ -15,6 +17,12 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # 将 UPLOAD_DIR 转为绝对路径，避免工作目录变化导致文件找不到
+        if not os.path.isabs(self.UPLOAD_DIR):
+            self.UPLOAD_DIR = os.path.abspath(self.UPLOAD_DIR)
 
 
 settings = Settings()

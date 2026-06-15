@@ -119,7 +119,7 @@ async def update_template(
 
 
 async def delete_template(db: AsyncSession, template_id: uuid.UUID) -> bool:
-    """删除模板（级联删除版本和文件）"""
+    """删除模板（级联删除版本和文件，解除项目关联）"""
     template = await get_template(db, template_id)
     if not template:
         return False
@@ -128,6 +128,21 @@ async def delete_template(db: AsyncSession, template_id: uuid.UUID) -> bool:
     for version in template.versions:
         if version.file_path and os.path.exists(version.file_path):
             os.remove(version.file_path)
+
+    # 解除项目关联（多对多）
+    from app.models.project import project_templates
+    from sqlalchemy import delete as sql_delete, update as sql_update
+    await db.execute(
+        sql_delete(project_templates).where(project_templates.c.template_id == template_id)
+    )
+
+    # 将引用此模板的合同的 template_id 设为 NULL（允许合同保留）
+    from app.models.contract import Contract
+    await db.execute(
+        sql_update(Contract.__table__)
+        .where(Contract.__table__.c.template_id == template_id)
+        .values(template_id=None, template_version_id=None)
+    )
 
     await db.delete(template)
     await db.flush()

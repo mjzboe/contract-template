@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.contract import Contract
 from app.models.template import Template, TemplateVersion
+from app.config import settings
 from app.utils.doc_generator import generate_docx, preview_docx
 
 
@@ -48,7 +49,7 @@ async def generate_contract(
         raise ValueError("模板版本不存在")
 
     # 生成 DOCX 文件
-    output_dir = os.path.join("./uploads", "contracts")
+    output_dir = os.path.join(settings.UPLOAD_DIR, "contracts")
     os.makedirs(output_dir, exist_ok=True)
 
     output_filename = f"{uuid.uuid4().hex}.docx"
@@ -221,7 +222,7 @@ async def batch_generate_from_rows(
         raise ValueError("项目不存在")
 
     contracts: list[Contract] = []
-    output_dir = os.path.join("./uploads", "contracts")
+    output_dir = os.path.join(settings.UPLOAD_DIR, "contracts")
     os.makedirs(output_dir, exist_ok=True)
 
     for idx in selected_indices:
@@ -326,7 +327,7 @@ async def batch_generate_from_excel(
     headers = [str(h).strip() if h else "" for h in rows[0]]
     contracts: list[Contract] = []
 
-    output_dir = os.path.join("./uploads", "contracts")
+    output_dir = os.path.join(settings.UPLOAD_DIR, "contracts")
     os.makedirs(output_dir, exist_ok=True)
 
     for row_idx, row in enumerate(rows[1:], start=2):
@@ -379,7 +380,11 @@ async def batch_generate_from_excel(
     return contracts
 
 
-def build_zip(contracts: list[Contract], output_dir: str = "./uploads/zip") -> str:
+def build_zip(contracts: list[Contract], output_dir: str | None = None) -> str:
+    """将多个合同文件打包为 zip，返回 zip 文件路径"""
+    if not output_dir:
+        from app.config import settings
+        output_dir = os.path.join(settings.UPLOAD_DIR, "zip")
     """将多个合同文件打包为 zip，返回 zip 文件路径"""
     os.makedirs(output_dir, exist_ok=True)
     zip_filename = f"contracts_{uuid.uuid4().hex[:8]}.zip"

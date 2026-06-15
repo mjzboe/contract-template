@@ -91,7 +91,7 @@ class ArchiveListItem(BaseModel):
     title: str
     status: str = "archived"
     archived_at: datetime | None = None
-    template_id: uuid.UUID
+    template_id: uuid.UUID | None = None
     template_name: str | None = None
     project_id: uuid.UUID | None = None
     project_name: str | None = None
@@ -120,7 +120,7 @@ class ArchiveDetail(BaseModel):
     title: str
     status: str = "archived"
     archived_at: datetime | None = None
-    template_id: uuid.UUID
+    template_id: uuid.UUID | None = None
     template_name: str | None = None
     project_id: uuid.UUID | None = None
     project_name: str | None = None

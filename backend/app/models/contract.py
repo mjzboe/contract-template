@@ -20,8 +20,8 @@ class Contract(Base, TimestampMixin):
     project_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("projects.id"), nullable=True
     )
-    template_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("templates.id"), nullable=False
+    template_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("templates.id"), nullable=True
     )
     template_version_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("template_versions.id"), nullable=True
