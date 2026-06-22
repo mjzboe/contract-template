@@ -385,10 +385,10 @@ export default function ProjectManagePage() {
               <div style={{ marginTop: 4, paddingLeft: 16 }}>
                 {detailProject.deduplicated_variables.map((v) => (
                   <Tag
-                    key={typeof v === "object" ? (v as Record<string, string>).name : String(v)}
+                    key={v.name}
                     style={{ borderRadius: 6, marginBottom: 4, borderColor: "#E8E4DF", color: "#B8860B", background: "rgba(184,134,11,0.06)" }}
                   >
-                    {typeof v === "object" ? (v as Record<string, string>).display_name || (v as Record<string, string>).name : String(v)}
+                    {v.display_name || v.name}
                   </Tag>
                 ))}
               </div>
