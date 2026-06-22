@@ -21,7 +21,8 @@ RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debia
     sed -i 's|http:|https:|g' /etc/apt/sources.list.d/debian.sources
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libreoffice-writer libreoffice-common libpq5 && \
+    libreoffice-writer libreoffice-common libpq5 \
+    fonts-noto-cjk fonts-wqy-zenhei && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /opt/venv /opt/venv

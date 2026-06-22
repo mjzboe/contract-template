@@ -5,6 +5,9 @@ import tempfile
 
 from docx import Document
 
+from docx.oxml.ns import qn
+
+from app.config import resolve_file_path
 from app.utils.variable_parser import CHINESE_BRACKET_PATTERN
 
 
@@ -23,7 +26,11 @@ def generate_docx(
     Returns:
         生成文件的路径
     """
-    doc = Document(template_path)
+    resolved = resolve_file_path(template_path)
+    doc = Document(resolved)
+
+    # 确保所有 run 都有东亚字体设置，避免 LibreOffice 转换 PDF 时中文变方框
+    _ensure_cjk_font(doc)
 
     # 替换段落中的变量
     for paragraph in doc.paragraphs:
@@ -80,7 +87,8 @@ def batch_generate_docx(
 
 def preview_docx(template_path: str, variables: dict[str, str]) -> str:
     """预览：替换变量后返回文档的纯文本内容"""
-    doc = Document(template_path)
+    resolved = resolve_file_path(template_path)
+    doc = Document(resolved)
 
     # 替换段落
     for paragraph in doc.paragraphs:
@@ -131,3 +139,42 @@ def _replace_variables_in_text(text: str, variables: dict[str, str]) -> str:
         return variables.get(var_name, match.group(0))  # 未找到则保留原样
 
     return CHINESE_BRACKET_PATTERN.sub(replacer, text)
+
+
+CJK_FONT = "Noto Sans CJK SC"
+
+
+def _ensure_cjk_font(doc: Document):
+    """为文档中所有 run 设置东亚字体，避免 LibreOffice 转换 PDF 时中文变方框。
+
+    Word 默认用宋体/等线等中文字体，但 Docker 容器中没有这些字体，
+    LibreOffice 会 fallback 到不支持中文的字体。显式设置为容器中已安装的
+    Noto Sans CJK SC 可解决此问题。
+    """
+    for paragraph in doc.paragraphs:
+        _set_run_cjk_font(paragraph)
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    _set_run_cjk_font(paragraph)
+    for section in doc.sections:
+        for header_footer in [section.header, section.footer]:
+            if header_footer:
+                for paragraph in header_footer.paragraphs:
+                    _set_run_cjk_font(paragraph)
+
+
+def _set_run_cjk_font(paragraph):
+    """为段落中每个 run 设置东亚字体"""
+    for run in paragraph.runs:
+        rpr = run._element.find(qn("w:rPr"))
+        if rpr is None:
+            rpr = run._element.makeelement(qn("w:rPr"), {})
+            run._element.insert(0, rpr)
+        rfonts = rpr.find(qn("w:rFonts"))
+        if rfonts is None:
+            rfonts = rpr.makeelement(qn("w:rFonts"), {})
+            rpr.insert(0, rfonts)
+        if not rfonts.get(qn("w:eastAsia")):
+            rfonts.set(qn("w:eastAsia"), CJK_FONT)
