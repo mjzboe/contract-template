@@ -48,3 +48,19 @@ export async function getTemplateVariables(id: string) {
   const res = await api.get<VariableInfoResponse[]>(`/templates/${id}/variables`);
   return res.data;
 }
+
+// 上传模板新版本
+export async function uploadTemplateVersion(id: string, formData: FormData) {
+  const res = await api.post<TemplateUploadResponse>(`/templates/${id}/versions`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+}
+
+// 设置 master 版本
+export async function setMasterVersion(templateId: string, versionId: string) {
+  const res = await api.put<TemplateResponse>(
+    `/templates/${templateId}/versions/${versionId}/set-master`
+  );
+  return res.data;
+}
