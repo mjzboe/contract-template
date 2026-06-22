@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "dev-secret-key-change-in-production"
     UPLOAD_DIR: str = "./uploads"
     CORS_ORIGINS: str = "http://localhost:5173"
-    LIBREOFFICE_PATH: str = r"C:\Program Files\LibreOffice\program\soffice.exe"
+    LIBREOFFICE_PATH: str = "/usr/bin/libreoffice"
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
