@@ -142,3 +142,66 @@ async def get_template_variables(
     if variables is None:
         raise HTTPException(status_code=404, detail="模板或主版本不存在")
     return [VariableInfoResponse(**v.__dict__) for v in variables]
+
+
+@router.post("/{template_id}/versions", response_model=TemplateUploadResponse)
+async def upload_template_version(
+    template_id: uuid.UUID,
+    file: UploadFile = File(...),
+    change_log: str | None = Form(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("super_admin", "template_admin")),
+):
+    """为已有模板上传新版本"""
+    if not file.filename or not file.filename.endswith((".docx", ".doc")):
+        raise HTTPException(status_code=400, detail="仅支持 Word 文档（.docx/.doc）")
+
+    from app.config import settings
+
+    file_content = await file.read()
+    file_path = await template_service.save_upload_file(
+        file_content, file.filename, settings.UPLOAD_DIR
+    )
+
+    result = await template_service.create_version(
+        db, template_id, file_path, change_log=change_log, user_id=current_user.id
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="模板不存在")
+    await db.commit()
+
+    version, variables = result
+    template = await template_service.get_template(db, template_id)
+
+    return TemplateUploadResponse(
+        template=TemplateResponse.model_validate(template),
+        variables=[VariableInfoResponse(**v.__dict__) for v in variables],
+    )
+
+
+@router.put("/{template_id}/versions/{version_id}/set-master", response_model=TemplateResponse)
+async def set_master_version(
+    template_id: uuid.UUID,
+    version_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _user: User = Depends(require_role("super_admin", "template_admin")),
+):
+    """设置指定版本为 master 版本"""
+    template = await template_service.get_template(db, template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="模板不存在")
+
+    target = None
+    for v in template.versions:
+        if v.id == version_id:
+            target = v
+        else:
+            v.is_master = False
+
+    if not target:
+        raise HTTPException(status_code=404, detail="版本不存在")
+
+    target.is_master = True
+    await db.commit()
+    await db.refresh(template, ["versions"])
+    return TemplateResponse.model_validate(template)

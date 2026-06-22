@@ -149,6 +149,65 @@ async def delete_template(db: AsyncSession, template_id: uuid.UUID) -> bool:
     return True
 
 
+async def create_version(
+    db: AsyncSession,
+    template_id: uuid.UUID,
+    file_path: str,
+    change_log: str | None = None,
+    user_id: uuid.UUID | None = None,
+) -> tuple[TemplateVersion, list[VariableInfo]] | None:
+    """为已有模板上传新版本"""
+    template = await get_template(db, template_id)
+    if not template:
+        return None
+
+    # 计算新版本号：找到当前最大版本号 +1
+    max_v = 0
+    for v in template.versions:
+        try:
+            num = int(v.version_number.lstrip("vV"))
+            if num > max_v:
+                max_v = num
+        except ValueError:
+            pass
+    new_version_number = f"v{max_v + 1}"
+
+    # 将旧 master 取消
+    for v in template.versions:
+        if v.is_master:
+            v.is_master = False
+
+    # 解析变量
+    variables = extract_variables_from_docx(file_path)
+    var_dicts = [
+        {
+            "name": v.name,
+            "display_name": v.display_name,
+            "var_type": v.var_type,
+            "default_value": v.default_value,
+            "validation_rule": v.validation_rule,
+            "occurrences": v.occurrences,
+        }
+        for v in variables
+    ]
+
+    # 创建新版本，标记为 master
+    version = TemplateVersion(
+        template_id=template_id,
+        version_number=new_version_number,
+        file_path=file_path,
+        variables=var_dicts,
+        is_master=True,
+        change_log=change_log or f"更新至{new_version_number}",
+        created_by=user_id,
+    )
+    db.add(version)
+    await db.flush()
+    await db.refresh(template, ["versions"])
+
+    return version, variables
+
+
 async def get_template_variables(
     db: AsyncSession, template_id: uuid.UUID
 ) -> list[VariableInfo] | None:

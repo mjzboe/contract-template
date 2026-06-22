@@ -9,9 +9,17 @@ import {
   message,
   Popconfirm,
   Typography,
+  Tag,
 } from "antd";
-import { UploadOutlined, DeleteOutlined, SearchOutlined } from "@ant-design/icons";
-import type { TemplateResponse, VariableInfoResponse } from "../../types";
+import {
+  UploadOutlined,
+  DeleteOutlined,
+  SearchOutlined,
+  HistoryOutlined,
+  StarOutlined,
+  StarFilled,
+} from "@ant-design/icons";
+import type { TemplateResponse, VariableInfoResponse, TemplateVersionResponse } from "../../types";
 import * as templateApi from "../../api/templates";
 
 const { Text } = Typography;
@@ -35,6 +43,12 @@ export default function TemplateManagePage() {
   const [varsOpen, setVarsOpen] = useState(false);
   const [currentVars, setCurrentVars] = useState<VariableInfoResponse[]>([]);
   const [currentName, setCurrentName] = useState("");
+
+  // 版本管理
+  const [versionOpen, setVersionOpen] = useState(false);
+  const [versionTemplate, setVersionTemplate] = useState<TemplateResponse | null>(null);
+  const [newVersionUploading, setNewVersionUploading] = useState(false);
+  const [changeLog, setChangeLog] = useState("");
 
   const fetchTemplates = async () => {
     setLoading(true);
@@ -84,6 +98,46 @@ export default function TemplateManagePage() {
     setVarsOpen(true);
   };
 
+  const openVersionManager = (record: TemplateResponse) => {
+    setVersionTemplate(record);
+    setChangeLog("");
+    setVersionOpen(true);
+  };
+
+  const handleUploadNewVersion = async (file: File) => {
+    if (!versionTemplate) return false;
+    setNewVersionUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      if (changeLog) fd.append("change_log", changeLog);
+      const res = await templateApi.uploadTemplateVersion(versionTemplate.id, fd);
+      message.success(`新版本上传成功，解析出 ${res.variables.length} 个变量`);
+      setVersionTemplate(res.template);
+      fetchTemplates();
+    } catch {
+      message.error("上传新版本失败");
+    } finally {
+      setNewVersionUploading(false);
+    }
+    return false;
+  };
+
+  const handleSetMaster = async (versionId: string) => {
+    if (!versionTemplate) return;
+    try {
+      const updated = await templateApi.setMasterVersion(versionTemplate.id, versionId);
+      setVersionTemplate(updated);
+      message.success("已切换主版本");
+      fetchTemplates();
+    } catch {
+      message.error("切换主版本失败");
+    }
+  };
+
+  const masterVersion = (record: TemplateResponse) =>
+    record.versions?.find((v) => v.is_master);
+
   const columns = [
     {
       title: "模板名称",
@@ -118,7 +172,7 @@ export default function TemplateManagePage() {
       title: "变量数",
       key: "vars",
       render: (_: unknown, r: TemplateResponse) => {
-        const master = r.versions?.find((v) => v.is_master);
+        const master = masterVersion(r);
         return (
           <Button
             type="link"
@@ -131,9 +185,19 @@ export default function TemplateManagePage() {
       },
     },
     {
-      title: "版本",
+      title: "当前版本",
       key: "version",
-      render: (_: unknown, r: TemplateResponse) => r.versions?.length || 0,
+      render: (_: unknown, r: TemplateResponse) => {
+        const master = masterVersion(r);
+        return (
+          <Space size={4}>
+            <Text style={{ fontSize: 13 }}>{master?.version_number || "v1"}</Text>
+            {r.versions?.length > 1 && (
+              <Text style={{ fontSize: 12, color: "#999" }}>(共 {r.versions.length} 个版本)</Text>
+            )}
+          </Space>
+        );
+      },
     },
     {
       title: "创建时间",
@@ -147,11 +211,22 @@ export default function TemplateManagePage() {
       title: "操作",
       key: "action",
       render: (_: unknown, r: TemplateResponse) => (
-        <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r.id)}>
-          <Button type="link" danger icon={<DeleteOutlined />} style={{ fontWeight: 500 }}>
-            删除
+        <Space size={4}>
+          <Button
+            type="link"
+            size="small"
+            icon={<HistoryOutlined />}
+            onClick={() => openVersionManager(r)}
+            style={{ fontWeight: 500 }}
+          >
+            版本管理
           </Button>
-        </Popconfirm>
+          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r.id)}>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />} style={{ fontWeight: 500 }}>
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -212,6 +287,7 @@ export default function TemplateManagePage() {
         />
       </div>
 
+      {/* 上传新模板 */}
       <Modal
         title={
           <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 17 }}>
@@ -234,6 +310,7 @@ export default function TemplateManagePage() {
         {uploading && <p style={{ textAlign: "center", marginTop: 8, color: "#6B6B6B" }}>上传中...</p>}
       </Modal>
 
+      {/* 变量列表 */}
       <Modal
         title={
           <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 17 }}>
@@ -256,6 +333,97 @@ export default function TemplateManagePage() {
             { title: "类型", dataIndex: "var_type" },
             { title: "出现次数", dataIndex: "occurrences" },
             { title: "默认值", dataIndex: "default_value" },
+          ]}
+        />
+      </Modal>
+
+      {/* 版本管理 */}
+      <Modal
+        title={
+          <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 17 }}>
+            版本管理 — {versionTemplate?.name}
+          </span>
+        }
+        open={versionOpen}
+        onCancel={() => setVersionOpen(false)}
+        footer={null}
+        width={680}
+      >
+        {/* 上传新版本 */}
+        <div style={{ marginBottom: 16, padding: 16, background: "#FAFAFA", borderRadius: 8 }}>
+          <Text style={{ fontWeight: 500, display: "block", marginBottom: 8 }}>上传新版本</Text>
+          <Space direction="vertical" style={{ width: "100%" }}>
+            <Input
+              placeholder="版本变更说明（可选）"
+              value={changeLog}
+              onChange={(e) => setChangeLog(e.target.value)}
+              style={{ borderRadius: 6 }}
+            />
+            <Upload
+              accept=".docx,.doc"
+              showUploadList={false}
+              beforeUpload={(file) => { handleUploadNewVersion(file); return false; }}
+            >
+              <Button icon={<UploadOutlined />} loading={newVersionUploading}>
+                选择文件上传新版本
+              </Button>
+            </Upload>
+          </Space>
+        </div>
+
+        {/* 版本列表 */}
+        <Table
+          rowKey="id"
+          size="small"
+          pagination={false}
+          dataSource={[...(versionTemplate?.versions || [])].sort(
+            (a, b) => b.version_number.localeCompare(a.version_number)
+          )}
+          columns={[
+            {
+              title: "版本",
+              dataIndex: "version_number",
+              width: 80,
+              render: (v: string) => <Text strong>{v}</Text>,
+            },
+            {
+              title: "主版本",
+              dataIndex: "is_master",
+              width: 80,
+              render: (isMaster: boolean, r: TemplateVersionResponse) =>
+                isMaster ? (
+                  <Tag color="gold" icon={<StarFilled />}>当前</Tag>
+                ) : (
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<StarOutlined />}
+                    onClick={() => handleSetMaster(r.id)}
+                    style={{ padding: 0, fontSize: 12 }}
+                  >
+                    设为主版本
+                  </Button>
+                ),
+            },
+            {
+              title: "变量数",
+              dataIndex: "variables",
+              width: 70,
+              render: (v: unknown[]) => (Array.isArray(v) ? v.length : 0),
+            },
+            {
+              title: "变更说明",
+              dataIndex: "change_log",
+              render: (t: string) => <Text style={{ color: "#6B6B6B", fontSize: 13 }}>{t || "-"}</Text>,
+            },
+            {
+              title: "上传时间",
+              dataIndex: "created_at",
+              width: 160,
+              render: (t: string) => (
+                <Text style={{ color: "#999", fontSize: 12 }}>{new Date(t).toLocaleString("zh-CN")}</Text>
+              ),
+            },
           ]}
         />
       </Modal>
