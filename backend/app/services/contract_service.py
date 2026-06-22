@@ -58,7 +58,7 @@ async def generate_contract(
     generate_docx(template_version.file_path, variables, output_path)
 
     # 创建 Contract 记录（自动归档）
-    now = datetime.utcnow().isoformat()
+    now = datetime.now().isoformat()
     contract = Contract(
         title=title,
         project_id=project_id,
@@ -67,7 +67,7 @@ async def generate_contract(
         variables=variables,
         file_path=output_path,
         status="archived",
-        archived_at=datetime.utcnow(),
+        archived_at=datetime.now(),
         status_history=[
             {"status": "draft", "at": now},
             {"status": "archived", "at": now},
@@ -252,7 +252,7 @@ async def batch_generate_from_rows(
             if safe_summary:
                 title += f" - {safe_summary}"
 
-            now = datetime.utcnow().isoformat()
+            now = datetime.now().isoformat()
             contract = Contract(
                 title=title,
                 project_id=project_id,
@@ -261,7 +261,7 @@ async def batch_generate_from_rows(
                 variables=variables,
                 file_path=output_path,
                 status="archived",
-                archived_at=datetime.utcnow(),
+                archived_at=datetime.now(),
                 status_history=[
                     {"status": "draft", "at": now},
                     {"status": "archived", "at": now},
@@ -356,7 +356,7 @@ async def batch_generate_from_excel(
         output_path = os.path.join(output_dir, output_filename)
         generate_docx(template_version.file_path, variables, output_path)
 
-        now = datetime.utcnow().isoformat()
+        now = datetime.now().isoformat()
         contract = Contract(
             title=title,
             project_id=project_id,
@@ -365,7 +365,7 @@ async def batch_generate_from_excel(
             variables=variables,
             file_path=output_path,
             status="archived",
-            archived_at=datetime.utcnow(),
+            archived_at=datetime.now(),
             status_history=[
                 {"status": "draft", "at": now},
                 {"status": "archived", "at": now},
